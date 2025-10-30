@@ -40,13 +40,6 @@ const wf = workflow({
           "working-directory": "${{ runner.temp }}/npm",
         },
         {
-          uses: "actions/setup-node@v4",
-          with: {
-            "node-version": 24,
-            "registry-url": "https://registry.npmjs.org",
-          },
-        },
-        {
           uses: "actions/upload-artifact@v4",
           if: "${{ always() }}",
           with: {
