@@ -6,7 +6,7 @@ import { lines } from "@jlarky/gha-ts/utils";
 import { checkoutStep, installMise } from "./utils/steps.ts";
 
 const wf = workflow({
-  name: "Example workflow",
+  name: "PR Checks",
   on: {
     push: { branches: ["main"] },
     pull_request: {},
@@ -28,6 +28,10 @@ const wf = workflow({
       steps: [
         checkoutStep(),
         installMise(),
+        {
+          name: "bun install",
+          run: "mise run install",
+        },
         {
           name: "Run tests",
           run: lines`mise run test`,
