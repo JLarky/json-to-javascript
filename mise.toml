@@ -37,3 +37,8 @@ run = "prettier . --write"
 [tasks."format-check"]
 tools.prettier = "latest"
 run = "prettier . --check"
+
+[tasks.jsr]
+description = "Run jsr commands"
+tools.bun = "1.3"
+run = "bunx jsr"
