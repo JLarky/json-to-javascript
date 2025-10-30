@@ -1,9 +1,12 @@
 {
   "name": "@jlarky/json-to-javascript",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "exports": {
     ".": "./index.ts",
     "./cli": "./cli.ts"
+  },
+  "publish": {
+    "include": ["index.ts", "cli.ts", "README.md"]
   }
 }
