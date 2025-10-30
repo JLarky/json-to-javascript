@@ -44,7 +44,12 @@ mise run actionlint
 
 ## Publishing
 
-Set the new version in `jsr.json` and push to `main`.
+Bump the version and push to `main`:
+
+```bash
+mise run bump-version
+git push origin main
+```
 
 When `jsr.json` changes on `main`, the Create Release workflow (`.github/workflows/create-release.main.ts`) automatically creates a draft prerelease on GitHub with tag `v<version>`.
 
