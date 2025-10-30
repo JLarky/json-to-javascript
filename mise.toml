@@ -61,9 +61,9 @@ const tmpFolder = (await $`mktemp -d`.text()).trim();
 await $`cp jsr.json ${tmpFolder}/package.json`;
 await $`bun pm pkg get version`.cwd(tmpFolder);
 await $`bun pm version patch --no-git-tag-version`.cwd(tmpFolder);
-const newVersion = (await $`bun pm pkg get version`.cwd(tmpFolder)).trim();
+const newVersion = (await $`bun pm pkg get version`.cwd(tmpFolder).text()).trim();
 await $`cp ${tmpFolder}/package.json jsr.json`;
 await $`rm -rf ${tmpFolder}`;
-await $`git commit jsr.json -m "Bump version to $newVersion"`;
-await $`git push origin main`;
+await $`git commit jsr.json -m "Bump version to ${newVersion}"`;
+console.log('Now you can run `git push origin main` to publish the new version');
 '''
