@@ -1,21 +1,25 @@
 [tasks.wf-install]
 description = "Install dependencies with Node"
-tools.node = "22"
-run = "cd .github/workflows && npm install"
+tools.bun = "1.3"
+run = "cd .github/workflows && bun install"
 
 [tasks.wf-install-ci]
 description = "Install only production dependencies"
-tools.node = "22"
-run = "cd .github/workflows && npm ci --omit=dev"
+tools.bun = "1.3"
+run = "cd .github/workflows && bun install --frozen-lockfile --omit=dev"
 
 [tasks.wf-build]
-tools.node = "22"
+tools.bun = "1.3"
 run = ".github/workflows/utils/build-cli.ts"
 
 [tasks.wf-watch]
-tools.node = "22"
-run = "node --watch --no-warnings .github/workflows/utils/build-cli.ts"
+tools.bun = "1.3"
+run = "bun --watch .github/workflows/utils/build-cli.ts"
 
 [tasks.format]
 tools.prettier = "latest"
 run = "prettier . --write"
+
+[tasks."format-check"]
+tools.prettier = "latest"
+run = "prettier . --check"

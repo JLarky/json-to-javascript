@@ -7,6 +7,7 @@
 
 export const actionVersions = {
   // chose what actions you are okay using the latest version of
+  "jdx/mise-action@v3": "jdx/mise-action@v3",
   "actions/checkout@v5": "actions/checkout@v5",
   // and which you want to pin to a specific version
   "actions/setup-node@v5":

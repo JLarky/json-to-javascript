@@ -3,7 +3,7 @@ import { workflow } from "@jlarky/gha-ts/workflow-types";
 import { generateWorkflowYaml } from "./utils/yaml.ts";
 import { lines } from "@jlarky/gha-ts/utils";
 
-import { checkoutStep } from "./utils/steps.ts";
+import { checkoutStep, installMise } from "./utils/steps.ts";
 
 const wf = workflow({
   name: "Example workflow",
@@ -12,15 +12,14 @@ const wf = workflow({
     pull_request: {},
   },
   jobs: {
-    exampleJob: {
+    checkFormat: {
       "runs-on": "ubuntu-latest",
       steps: [
-        checkoutStep({ "fetch-depth": 0 }),
+        checkoutStep(),
+        installMise(),
         {
-          name: "Test",
-          run: lines(`
-            echo 'Hello, world!'
-          `),
+          name: "Check format",
+          run: lines`mise run format-check`,
         },
       ],
     },

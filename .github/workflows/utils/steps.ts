@@ -18,3 +18,11 @@ export function checkoutStep(options: CheckoutOptions = {}): UsesStep {
 export function setupNodeStep(options: SetupNodeOptions = {}): UsesStep {
   return uses(actionVersions["actions/setup-node@v5"], buildWith(options));
 }
+
+export function installMise(): UsesStep {
+  return uses(
+    actionVersions["jdx/mise-action@v3"],
+    {},
+    { name: "Install mise" }
+  );
+}
