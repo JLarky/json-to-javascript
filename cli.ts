@@ -83,7 +83,6 @@ if (!values.inputFile || !values.outputFile) {
 
 const input = readFileSync(values.inputFile, "utf8");
 const json = JSON.parse(input);
-console.log(json);
 const output = await jsonToJavascript(json, {
   prefix: values.prefix,
   suffix: values.suffix,

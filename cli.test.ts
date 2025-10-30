@@ -18,13 +18,7 @@ describe("cli", () => {
     await Bun.write(inputFile, JSON.stringify({ name: "John\nDoe", age: 30 }));
     const text =
       await $`bun run cli.ts --inputFile ${inputFile} --outputFile ${outputFile}`.text();
-    expect(text).toMatchInlineSnapshot(`
-      "{
-        name: "John\\nDoe",
-        age: 30,
-      }
-      "
-      `);
+    expect(text).toMatchInlineSnapshot(`""`);
     const output = await Bun.file(outputFile).text();
     expect(output).toMatchInlineSnapshot(`
       "({ name: "John\\nDoe", age: 30 });
@@ -39,13 +33,7 @@ describe("cli", () => {
     await Bun.write(inputFile, JSON.stringify({ name: "John\nDoe", age: 30 }));
     const text =
       await $`bun run cli.ts --inputFile ${inputFile} --outputFile ${outputFile} --useDedent true --prefix "import dedent from 'dedent'; const x = ("`.text();
-    expect(text).toMatchInlineSnapshot(`
-      "{
-        name: "John\\nDoe",
-        age: 30,
-      }
-      "
-      `);
+    expect(text).toMatchInlineSnapshot(`""`);
     const output = await Bun.file(outputFile).text();
     expect(output).toMatchInlineSnapshot(`
       "import dedent from "dedent";
