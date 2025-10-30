@@ -21,7 +21,7 @@ Input file (`input.json`):
 **Node.js:**
 
 ```bash
-npx jsr:@jlarky/json-to-javascript/cli \
+npx @jlarky/json-to-javascript \
   --inputFile input.json \
   --outputFile output.ts \
   --useDedent true \
@@ -33,7 +33,7 @@ npx jsr:@jlarky/json-to-javascript/cli \
 **Bun:**
 
 ```bash
-bunx jsr:@jlarky/json-to-javascript/cli \
+bunx @jlarky/json-to-javascript \
   --inputFile input.json \
   --outputFile output.ts \
   --useDedent true \
@@ -76,7 +76,7 @@ export const data = {
 ### Basic Usage
 
 ```bash
-npx jsr:@jlarky/json-to-javascript/cli \
+npx @jlarky/json-to-javascript \
   --inputFile input.json \
   --outputFile output.js
 ```

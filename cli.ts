@@ -1,3 +1,4 @@
+#!/usr/bin/env -S node
 /**
  * Command-line interface for converting JSON files to JavaScript code literals.
  *
