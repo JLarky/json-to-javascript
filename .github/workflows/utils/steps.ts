@@ -20,9 +20,7 @@ export function setupNodeStep(options: SetupNodeOptions = {}): UsesStep {
 }
 
 export function installMise(): UsesStep {
-  return uses(
-    actionVersions["jdx/mise-action@v3"],
-    {},
-    { name: "Install mise" }
-  );
+  return uses(actionVersions["jdx/mise-action@v3"], undefined, {
+    name: "Install mise",
+  });
 }

@@ -13,7 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: jdx/mise-action@v3
-        with: {}
         name: Install mise
       - name: Check format
         run: |

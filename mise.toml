@@ -8,6 +8,10 @@ description = "Install only production dependencies"
 tools.bun = "1.3"
 run = "cd .github/workflows && bun install --frozen-lockfile --omit=dev"
 
+[tasks.wf-clear]
+description = "Clear generated workflows"
+run = "rm -f .github/workflows/*.generated.yml"
+
 [tasks.wf-build]
 tools.bun = "1.3"
 run = ".github/workflows/utils/build-cli.ts"

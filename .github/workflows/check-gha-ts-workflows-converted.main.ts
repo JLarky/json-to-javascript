@@ -3,7 +3,7 @@ import { workflow } from "@jlarky/gha-ts/workflow-types";
 
 import { generateWorkflowYaml } from "./utils/yaml.ts";
 import { lines } from "@jlarky/gha-ts/utils";
-import { checkoutStep, setupNodeStep } from "./utils/steps.ts";
+import { checkoutStep, installMise, setupNodeStep } from "./utils/steps.ts";
 
 const wf = workflow({
   name: "Check gha-ts workflows converted",
@@ -17,18 +17,18 @@ const wf = workflow({
       "runs-on": "ubuntu-latest",
       steps: [
         checkoutStep({ "fetch-depth": 0 }),
-        setupNodeStep({ "node-version": "22" }),
+        installMise(),
         {
           name: "Install production dependencies",
-          run: lines("cd .github/workflows && npm ci --production"),
+          run: lines`mise run wf-install-ci`,
         },
         {
           name: "Clear generated workflows",
-          run: lines(`rm -f .github/workflows/*.generated.yml`),
+          run: lines`mise run wf-clear`,
         },
         {
           name: "Generate TS workflows to yaml",
-          run: lines`.github/workflows/utils/build-cli.ts`,
+          run: lines`mise run wf-build`,
         },
         {
           name: "Verify if TS workflows are converted",
