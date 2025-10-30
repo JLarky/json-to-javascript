@@ -58,6 +58,7 @@ const files = ["README.md", "index.js", "cli.js", "index.js.map", "cli.js.map"];
 for await (const file of glob.scan(".")) files.push(file);
 
 await $`bun pm pkg set --json files='${JSON.stringify(files)}'`;
+await $`bun pm pkg set bin.json-to-javascript=cli.js`;
 
 await $`cat package.json`;
 
