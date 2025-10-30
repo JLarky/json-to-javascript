@@ -16,7 +16,7 @@ export const stringifyYaml: Stringify = (input) =>
 
 export async function generateWorkflowYaml(
   workflow: Workflow,
-  moduleUrl: string // from import.meta.url
+  moduleUrl: string, // from import.meta.url
 ) {
   return generateWorkflow(workflow, stringifyYaml, moduleUrl);
 }

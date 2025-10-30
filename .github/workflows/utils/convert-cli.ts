@@ -68,7 +68,7 @@ for (const file of files) {
     console.log();
     if (!remove) {
       console.log(
-        "IMPORTANT: you are now responsible for generating the YAML from the TS AND removing the original YAML file."
+        "IMPORTANT: you are now responsible for generating the YAML from the TS AND removing the original YAML file.",
       );
       filesToRemove.push(file);
     } else {
@@ -102,7 +102,7 @@ async function confirm(filename: string) {
   });
 
   const name = await rl.question(
-    `File "${filename}" already exists. Overwrite? (y/N) `
+    `File "${filename}" already exists. Overwrite? (y/N) `,
   );
   rl.close();
   return name.trim().toLowerCase() === "y";

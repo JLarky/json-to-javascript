@@ -15,3 +15,7 @@ run = ".github/workflows/utils/build-cli.ts"
 [tasks.wf-watch]
 tools.node = "22"
 run = "node --watch --no-warnings .github/workflows/utils/build-cli.ts"
+
+[tasks.format]
+tools.prettier = "latest"
+run = "prettier . --write"
