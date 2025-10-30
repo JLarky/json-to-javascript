@@ -9,6 +9,7 @@ This tool transforms JSON into properly formatted JavaScript code, automatically
 ### Example: Converting JSON with Multiline Strings
 
 Input file (`input.json`):
+
 ```json
 {
   "greeting": "Hello\nWorld",
@@ -18,6 +19,7 @@ Input file (`input.json`):
 ```
 
 **Node.js:**
+
 ```bash
 npx jsr:@jlarky/json-to-javascript/cli \
   --inputFile input.json \
@@ -29,6 +31,7 @@ npx jsr:@jlarky/json-to-javascript/cli \
 ```
 
 **Bun:**
+
 ```bash
 bunx jsr:@jlarky/json-to-javascript/cli \
   --inputFile input.json \
@@ -40,6 +43,7 @@ bunx jsr:@jlarky/json-to-javascript/cli \
 ```
 
 **Deno:**
+
 ```bash
 deno run --allow-sys=cpus --allow-env --allow-read=. --allow-write=. \
   jsr:@jlarky/json-to-javascript/cli \
@@ -52,6 +56,7 @@ deno run --allow-sys=cpus --allow-env --allow-read=. --allow-write=. \
 ```
 
 Output file (`output.ts`):
+
 ```typescript
 import dedent from "dedent";
 export const data = {
@@ -72,7 +77,6 @@ export const data = {
 
 ```bash
 npx jsr:@jlarky/json-to-javascript/cli \
-  --useDedent true \
   --inputFile input.json \
   --outputFile output.js
 ```
@@ -81,20 +85,13 @@ This outputs the same JSON with default prefix `(` and suffix `)`:
 
 ```javascript
 ({
-  greeting: dedent`
-    Hello
-    World
-  `,
-  message: dedent`
-    Line 1
-    Line 2
-    Line 3
-  `,
+  greeting: "Hello\nWorld",
+  message: "Line 1\nLine 2\nLine 3",
   count: 42,
 });
 ```
 
-The difference from the previous example: no custom prefix/suffix or import statement, just the data wrapped in parentheses.
+The difference from the previous example: no custom prefix/suffix, import statement, or dedent - just the data wrapped in parentheses with escaped newlines.
 
 ### CLI Options
 
