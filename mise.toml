@@ -44,3 +44,8 @@ depends = ["install", "test"]
 description = "Run jsr commands"
 tools.bun = "1.3"
 run = "bunx jsr"
+
+[tasks."clone-to-npm:ci"]
+description = "Clone to npm (CI)"
+tools.bun = "1.3"
+run = "mise run clone-to-npm"

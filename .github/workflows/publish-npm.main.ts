@@ -23,21 +23,17 @@ const wf = workflow({
       "runs-on": "ubuntu-latest",
       steps: [
         {
-          name: "Extract version from tag",
+          name: "Extract version from jsr.json",
           id: "version",
-          run: lines(`
-            VERSION="\${{ github.ref }}"
-            VERSION="\${VERSION#refs/tags/v}"
-            echo "version=\${VERSION}" >> "$GITHUB_OUTPUT"`),
-        },
-        {
-          run: lines`echo "Hello world! Publishing version \${{ steps.version.outputs.version }}"`,
+          run: lines`
+            echo "version=$(jq -r '.version' ./jsr.json)" >> "$GITHUB_OUTPUT"
+          `,
         },
         checkoutStep(),
         installMise(),
         {
           name: "Publish package",
-          run: lines`mise run clone-to-npm --publish --ci -d "$RUNNER_TEMP" --publish`,
+          run: lines`mise run clone-to-npm:ci --publish --ci -d "$RUNNER_TEMP" --publish`,
         },
         {
           run: lines`pwd && ls -la`,
