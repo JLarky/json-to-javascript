@@ -1,6 +1,6 @@
 import { parseArgs, type ParseArgsConfig } from "util";
-import { jsonToJavascript } from ".";
-import { readFileSync, writeFileSync, writeSync } from "fs";
+import { jsonToJavascript } from "./index.ts";
+import { readFileSync, writeFileSync } from "fs";
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
