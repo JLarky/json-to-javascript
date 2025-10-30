@@ -1,4 +1,4 @@
-# yaml-to-js
+# json-to-javascript
 
 To install dependencies:
 

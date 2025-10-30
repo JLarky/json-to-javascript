@@ -20,6 +20,11 @@ run = ".github/workflows/utils/build-cli.ts"
 tools.bun = "1.3"
 run = "bun --watch .github/workflows/utils/build-cli.ts"
 
+[tasks.test]
+description = "Run tests with Bun"
+tools.bun = "1.3"
+run = "bun test"
+
 [tasks.format]
 tools.prettier = "latest"
 run = "prettier . --write"

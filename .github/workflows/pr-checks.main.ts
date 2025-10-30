@@ -23,6 +23,17 @@ const wf = workflow({
         },
       ],
     },
+    runTests: {
+      "runs-on": "ubuntu-latest",
+      steps: [
+        checkoutStep(),
+        installMise(),
+        {
+          name: "Run tests",
+          run: lines`mise run test`,
+        },
+      ],
+    },
   },
 });
 

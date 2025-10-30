@@ -1,11 +1,19 @@
 {
-  "name": "yaml-to-js",
+  "name": "json-to-javascript",
   "module": "index.ts",
   "type": "module",
+  "bin": {
+    "json-to-javascript": "./cli.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@jlarky/gha-ts": "^0.1.4",
+    "@types/bun": "latest",
+    "dedent": "^1.7.0"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "prettier": "^3.6.2"
   }
 }
