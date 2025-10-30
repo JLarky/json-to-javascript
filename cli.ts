@@ -1,3 +1,23 @@
+/**
+ * Command-line interface for converting JSON files to JavaScript code literals.
+ *
+ * This CLI tool reads a JSON file, converts it to JavaScript code, and writes the result
+ * to an output file. It supports various options for customizing the output format,
+ * including code prefixes/suffixes, Prettier formatting, and multiline string handling.
+ *
+ * @example
+ * ```bash
+ * npx jsr:@jlarky/json-to-javascript/cli \
+ *   --inputFile data.json \
+ *   --outputFile data.js \
+ *   --useDedent true \
+ *   --prefix "export const data = (" \
+ *   --suffix ") as const"
+ * ```
+ *
+ * @module
+ */
+
 import { parseArgs, type ParseArgsConfig } from "util";
 import { jsonToJavascript } from "./index.ts";
 import { readFileSync, writeFileSync } from "fs";
