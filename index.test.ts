@@ -322,6 +322,25 @@ describe("jsonToJavascript", () => {
     );
   });
 
+  it("should handle negative zero correctly", async () => {
+    // JSON.stringify converts -0 to 0, so roundtrip through JSON loses the sign
+    const input = { value: -0 };
+    const result = await convert(input, {
+      prefix: "const obj = (",
+      suffix: ")",
+    });
+
+    const evalCode = `${result.code}\nconsole.log(JSON.stringify(obj))`;
+    const evalResult = await myEval(evalCode);
+    const parsedResult = JSON.parse(evalResult.trim());
+
+    // JSON.stringify(-0) returns "0", so we get +0 back
+    expect(parsedResult.value).toBe(0);
+    expect(Object.is(parsedResult.value, 0)).toBe(true);
+    // The generated code should still work correctly
+    expect(typeof parsedResult.value).toBe("number");
+  });
+
   describe("fast-check roundtrip tests", () => {
     it("should generate executable code for arbitrary JSON values", async () => {
       const jsonValue = fc.oneof(
@@ -354,11 +373,10 @@ describe("jsonToJavascript", () => {
           const parsedResult = JSON.parse(evalResult.trim());
 
           // Verify roundtrip matches original
-          if (typeof value === "number" && isNaN(value)) {
-            expect(isNaN(parsedResult)).toBe(true);
-          } else {
-            expect(parsedResult).toEqual(value);
-          }
+          // Note: JSON.stringify converts -0 to 0, so we normalize for comparison
+          const normalizedValue = normalizeForComparison(value);
+          const normalizedResult = normalizeForComparison(parsedResult);
+          expect(normalizedResult).toEqual(normalizedValue);
         }),
         { numRuns: 3 },
       );
@@ -393,10 +411,10 @@ describe("jsonToJavascript", () => {
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
 
-          // Verify roundtrip matches original (normalize NaN)
-          expect(JSON.parse(JSON.stringify(parsedResult))).toEqual(
-            JSON.parse(JSON.stringify(input)),
-          );
+          // Verify roundtrip matches original (normalize NaN and -0)
+          const normalizedInput = normalizeForComparison(input);
+          const normalizedResult = normalizeForComparison(parsedResult);
+          expect(normalizedResult).toEqual(normalizedInput);
         }),
         { numRuns: 3 },
       );
@@ -432,7 +450,10 @@ describe("jsonToJavascript", () => {
           const parsedResult = JSON.parse(evalResult.trim());
 
           // Verify roundtrip matches original
-          expect(parsedResult).toEqual(input);
+          // Note: JSON.stringify converts -0 to 0, so we normalize for comparison
+          const normalizedInput = normalizeForComparison(input);
+          const normalizedResult = normalizeForComparison(parsedResult);
+          expect(normalizedResult).toEqual(normalizedInput);
         }),
         { numRuns: 3 },
       );
@@ -468,9 +489,9 @@ describe("jsonToJavascript", () => {
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
 
-          // Normalize for comparison (handles NaN, etc.)
-          const normalizedOriginal = JSON.parse(JSON.stringify(input));
-          const normalizedResult = JSON.parse(JSON.stringify(parsedResult));
+          // Normalize for comparison (handles NaN, -0, etc.)
+          const normalizedOriginal = normalizeForComparison(input);
+          const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedOriginal);
         }),
         { numRuns: 3 }, // Reduced runs for faster test execution
@@ -508,8 +529,9 @@ describe("jsonToJavascript", () => {
           const parsedResult = JSON.parse(evalResult.trim());
 
           // Verify roundtrip matches original
-          const normalizedOriginal = JSON.parse(JSON.stringify(input));
-          const normalizedResult = JSON.parse(JSON.stringify(parsedResult));
+          // Note: JSON.stringify converts -0 to 0, so we normalize for comparison
+          const normalizedOriginal = normalizeForComparison(input);
+          const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedOriginal);
         }),
         { numRuns: 3 },
@@ -521,6 +543,26 @@ describe("jsonToJavascript", () => {
 const myEval = async (code: string) => {
   return $`node -e ${code}`.text();
 };
+
+// Helper to normalize values for comparison (handles -0 vs +0, NaN, etc.)
+function normalizeForComparison(value: unknown): unknown {
+  if (typeof value === "number") {
+    if (isNaN(value)) return NaN;
+    if (value === 0) return 0; // Normalize -0 and +0 to +0
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(normalizeForComparison);
+  }
+  if (value && typeof value === "object") {
+    const normalized: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      normalized[key] = normalizeForComparison(val);
+    }
+    return normalized;
+  }
+  return value;
+}
 
 async function roundTripTest(input: unknown) {
   const result = await convert(input, {
