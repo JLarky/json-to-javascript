@@ -5,9 +5,7 @@ import fc from "fast-check";
 
 // Configure fast-check iterations from environment variable
 // FC_FACTOR=10 means 10x more tests than default
-const FC_FACTOR = parseInt(process.env.FC_FACTOR || "1", 10);
-const FC_BASE_RUNS = 3;
-const FC_NUM_RUNS = FC_BASE_RUNS * FC_FACTOR;
+const FC_FACTOR = parseFloat(process.env.FC_FACTOR || "1");
 
 async function convert(input: unknown, options: Options = {}) {
   return await jsonToJavascript(input, {
@@ -300,11 +298,11 @@ describe("jsonToJavascript", () => {
           expect(parsedResult.text).toBe(randomStr);
         }
       }),
-      { numRuns: FC_NUM_RUNS },
+      { numRuns: 10 * FC_FACTOR },
     );
   });
 
-  it("should round-trip random string objects correctly", async () => {
+  it("fc: should round-trip random string objects correctly", async () => {
     await fc.assert(
       fc.asyncProperty(fc.string(), async (randomStr) => {
         const input = { text: randomStr };
@@ -324,7 +322,7 @@ describe("jsonToJavascript", () => {
         // The original string should match the result
         expect(parsedResult.text).toBe(randomStr);
       }),
-      { numRuns: FC_NUM_RUNS },
+      { numRuns: 10 * FC_FACTOR },
     );
   });
 
@@ -413,6 +411,35 @@ describe("jsonToJavascript", () => {
     expect(parsedResult.text).toBe(specialString);
   });
 
+  it("should handle backslash followed by newline", async () => {
+    // Test string with backslash followed by newline: "\\\n"
+    const specialString = "\\\n";
+    const input = { text: specialString };
+    const result = await convert(input, {
+      useDedent: true,
+      prefix: "const obj = (",
+      suffix: ")",
+    });
+
+    // The generated code should be executable
+    const evalCode = result.needsDedent
+      ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+      : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+    const evalResult = await myEval(evalCode);
+    const parsedResult = JSON.parse(evalResult.trim());
+
+    // Should roundtrip correctly
+    // Note: dedent may trim leading/trailing whitespace, so we compare trimmed versions
+    if (result.needsDedent) {
+      const normalizedExpected = specialString.trim();
+      const normalizedResult = parsedResult.text.trim();
+      expect(normalizedResult).toBe(normalizedExpected);
+    } else {
+      expect(parsedResult.text).toBe(specialString);
+    }
+  });
+
   describe("fast-check special character tests", () => {
     it("should handle random strings with special characters", async () => {
       // Generate strings that include special characters: backticks, $, quotes, newlines, backslashes
@@ -453,15 +480,17 @@ describe("jsonToJavascript", () => {
           // Should roundtrip correctly
           // Note: dedent may trim leading/trailing whitespace, so we compare trimmed versions
           // if dedent was used, otherwise do exact comparison
+          // Also, strings with $, `, or \n are excluded from dedent
           if (result.needsDedent) {
             const normalizedExpected = randomStr.trim();
             const normalizedResult = parsedResult.text.trim();
             expect(normalizedResult).toBe(normalizedExpected);
           } else {
+            // Strings excluded from dedent (contain $, `, or \n) should match exactly
             expect(parsedResult.text).toBe(randomStr);
           }
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -491,7 +520,7 @@ describe("jsonToJavascript", () => {
           // Should roundtrip correctly
           expect(parsedResult.text).toBe(randomStr);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -503,7 +532,13 @@ describe("jsonToJavascript", () => {
           fc.oneof(
             fc
               .string({ minLength: 1, maxLength: 10 })
-              .filter((s) => !s.includes("`") && !s.includes("\n")),
+              .filter(
+                (s) =>
+                  !s.includes("`") &&
+                  !s.includes("\n") &&
+                  !s.includes("$") &&
+                  !s.includes("\\"),
+              ),
             fc.constant("\n"),
           ),
           { minLength: 2, maxLength: 50 },
@@ -511,7 +546,11 @@ describe("jsonToJavascript", () => {
         .map((arr) => arr.join(""))
         .filter(
           (str) =>
-            str.includes("\n") && !str.includes("`") && str.trim().length > 0,
+            str.includes("\n") &&
+            !str.includes("`") &&
+            !str.includes("$") &&
+            !str.includes("\\\n") &&
+            str.trim().length > 0,
         );
 
       await fc.assert(
@@ -537,7 +576,7 @@ describe("jsonToJavascript", () => {
           const normalizedOriginal = randomStr.replace(/^\s+|\s+$/g, "");
           expect(normalized).toBe(normalizedOriginal);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
   });
@@ -547,7 +586,7 @@ describe("jsonToJavascript", () => {
       const jsonValue = fc.oneof(
         fc.string(),
         fc.integer(),
-        fc.float(),
+        fc.float().filter((n) => isFinite(n)), // Exclude Infinity and -Infinity
         fc.boolean(),
         fc.constant(null),
         fc.constant(undefined),
@@ -579,7 +618,7 @@ describe("jsonToJavascript", () => {
           const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedValue);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -589,7 +628,7 @@ describe("jsonToJavascript", () => {
         fc.oneof(
           fc.string(),
           fc.integer(),
-          fc.float(),
+          fc.float().filter((n) => isFinite(n)), // Exclude Infinity and -Infinity
           fc.boolean(),
           fc.constant(null),
         ),
@@ -617,7 +656,7 @@ describe("jsonToJavascript", () => {
           const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedInput);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -626,7 +665,7 @@ describe("jsonToJavascript", () => {
         fc.oneof(
           fc.string(),
           fc.integer(),
-          fc.float(),
+          fc.float().filter((n) => isFinite(n)), // Exclude Infinity and -Infinity
           fc.boolean(),
           fc.constant(null),
         ),
@@ -656,7 +695,7 @@ describe("jsonToJavascript", () => {
           const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedInput);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -665,7 +704,7 @@ describe("jsonToJavascript", () => {
         value: fc.oneof(
           { weight: 1, arbitrary: fc.string() },
           { weight: 1, arbitrary: fc.integer() },
-          { weight: 1, arbitrary: fc.float() },
+          { weight: 1, arbitrary: fc.float().filter((n) => isFinite(n)) }, // Exclude Infinity
           { weight: 1, arbitrary: fc.boolean() },
           { weight: 1, arbitrary: fc.constant(null) },
           { weight: 2, arbitrary: fc.dictionary(fc.string(), tie("value")!) },
@@ -695,7 +734,7 @@ describe("jsonToJavascript", () => {
           const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedOriginal);
         }),
-        { numRuns: FC_NUM_RUNS }, // Configurable via FC_FACTOR environment variable
+        { numRuns: 10 * FC_FACTOR }, // Configurable via FC_FACTOR environment variable
       );
     });
 
@@ -703,7 +742,7 @@ describe("jsonToJavascript", () => {
       const jsonValue = fc.oneof(
         fc.string(),
         fc.integer(),
-        fc.float(),
+        fc.float().filter((n) => isFinite(n)), // Exclude Infinity and -Infinity
         fc.boolean(),
         fc.constant(null),
         fc.dictionary(
@@ -735,7 +774,7 @@ describe("jsonToJavascript", () => {
           const normalizedResult = normalizeForComparison(parsedResult);
           expect(normalizedResult).toEqual(normalizedOriginal);
         }),
-        { numRuns: FC_NUM_RUNS },
+        { numRuns: 10 * FC_FACTOR },
       );
     });
   });
@@ -792,6 +831,7 @@ const myEval = async (code: string) => {
 };
 
 // Helper to normalize values for comparison (handles -0 vs +0, NaN, etc.)
+// Note: Infinity is excluded from fast-check tests since JSON.stringify converts it to null
 function normalizeForComparison(value: unknown): unknown {
   if (typeof value === "number") {
     if (isNaN(value)) return NaN;

@@ -168,7 +168,9 @@ export async function jsonToJavascript(
         if (
           typeof value === "string" &&
           value.includes("\n") &&
-          !value.includes("`")
+          !value.includes("`") &&
+          !value.includes("\\") &&
+          !value.includes("$")
         ) {
           replacedValue = randomString + markerCount++;
           multilineStrings.push(value);
