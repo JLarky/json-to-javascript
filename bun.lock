@@ -10,6 +10,7 @@
         "@jlarky/gha-ts": "^0.1.4",
         "@types/bun": "latest",
         "dedent": "^1.7.0",
+        "fast-check": "^4.3.0",
       },
       "peerDependencies": {
         "typescript": "^5",
@@ -31,7 +32,11 @@
 
     "dedent": ["dedent@1.7.0", "", { "peerDependencies": { "babel-plugin-macros": "^3.1.0" }, "optionalPeers": ["babel-plugin-macros"] }, "sha512-HGFtf8yhuhGhqO07SV79tRp+br4MnbdjeVxotpn1QBl30pcLLCQjX5b2295ll0fv8RKDKsmWYrl05usHM9CewQ=="],
 
+    "fast-check": ["fast-check@4.3.0", "", { "dependencies": { "pure-rand": "^7.0.0" } }, "sha512-JVw/DJSxVKl8uhCb7GrwanT9VWsCIdBkK3WpP37B/Au4pyaspriSjtrY2ApbSFwTg3ViPfniT13n75PhzE7VEQ=="],
+
     "prettier": ["prettier@3.6.2", "", { "bin": { "prettier": "bin/prettier.cjs" } }, "sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ=="],
+
+    "pure-rand": ["pure-rand@7.0.1", "", {}, "sha512-oTUZM/NAZS8p7ANR3SHh30kXB+zK2r2BPcEn/awJIbOvq82WoMN4p62AWWp3Hhw50G0xMsw1mhIBLqHw64EcNQ=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

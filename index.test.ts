@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { jsonToJavascript, type Options } from "./index";
 import { $ } from "bun";
+import fc from "fast-check";
 
 async function convert(input: unknown, options: Options = {}) {
   return await jsonToJavascript(input, {
@@ -270,6 +271,250 @@ describe("jsonToJavascript", () => {
         "
       `,
     );
+  });
+
+  it("should handle random strings correctly", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.string(), async (randomStr) => {
+        const input = { text: randomStr };
+        const result = await convert(input);
+
+        // If the string contains newlines, needsDedent should be true
+        if (randomStr.includes("\n")) {
+          expect(result.needsDedent).toBe(true);
+          // The generated code should contain dedent template literal
+          expect(result.code).toContain("dedent`");
+        } else {
+          expect(result.needsDedent).toBe(false);
+          // For strings without newlines, verify the code is valid JavaScript
+          // by doing a round-trip test
+          const evalCode = `${result.code}\nconsole.log(JSON.stringify(x()))`;
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+          expect(parsedResult.text).toBe(randomStr);
+        }
+      }),
+      { numRuns: 3 },
+    );
+  });
+
+  it("should round-trip random string objects correctly", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.string(), async (randomStr) => {
+        const input = { text: randomStr };
+        const result = await convert(input, {
+          prefix: "const obj = (",
+          suffix: ")",
+        });
+
+        // Evaluate the generated code
+        const evalCode = result.needsDedent
+          ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+
+        // The original string should match the result
+        expect(parsedResult.text).toBe(randomStr);
+      }),
+      { numRuns: 3 },
+    );
+  });
+
+  describe("fast-check roundtrip tests", () => {
+    it("should generate executable code for arbitrary JSON values", async () => {
+      const jsonValue = fc.oneof(
+        fc.string(),
+        fc.integer(),
+        fc.float(),
+        fc.boolean(),
+        fc.constant(null),
+        fc.constant(undefined),
+      );
+
+      await fc.assert(
+        fc.asyncProperty(jsonValue, async (value) => {
+          // Skip undefined as it's not valid JSON
+          if (value === undefined) return;
+
+          const result = await jsonToJavascript(value, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Build executable code
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Verify roundtrip matches original
+          if (typeof value === "number" && isNaN(value)) {
+            expect(isNaN(parsedResult)).toBe(true);
+          } else {
+            expect(parsedResult).toEqual(value);
+          }
+        }),
+        { numRuns: 3 },
+      );
+    });
+
+    it("should generate executable code for arbitrary JSON objects", async () => {
+      const jsonObject = fc.dictionary(
+        fc.string(),
+        fc.oneof(
+          fc.string(),
+          fc.integer(),
+          fc.float(),
+          fc.boolean(),
+          fc.constant(null),
+        ),
+      );
+
+      await fc.assert(
+        fc.asyncProperty(jsonObject, async (input) => {
+          const result = await jsonToJavascript(input, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Build executable code
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Verify roundtrip matches original (normalize NaN)
+          expect(JSON.parse(JSON.stringify(parsedResult))).toEqual(
+            JSON.parse(JSON.stringify(input)),
+          );
+        }),
+        { numRuns: 3 },
+      );
+    });
+
+    it("should generate executable code for arbitrary JSON arrays", async () => {
+      const jsonArray = fc.array(
+        fc.oneof(
+          fc.string(),
+          fc.integer(),
+          fc.float(),
+          fc.boolean(),
+          fc.constant(null),
+        ),
+        { maxLength: 10 },
+      );
+
+      await fc.assert(
+        fc.asyncProperty(jsonArray, async (input) => {
+          const result = await jsonToJavascript(input, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Build executable code
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Verify roundtrip matches original
+          expect(parsedResult).toEqual(input);
+        }),
+        { numRuns: 3 },
+      );
+    });
+
+    it("should generate executable code for nested structures", async () => {
+      const jsonValue = fc.letrec((tie) => ({
+        value: fc.oneof(
+          { weight: 1, arbitrary: fc.string() },
+          { weight: 1, arbitrary: fc.integer() },
+          { weight: 1, arbitrary: fc.float() },
+          { weight: 1, arbitrary: fc.boolean() },
+          { weight: 1, arbitrary: fc.constant(null) },
+          { weight: 2, arbitrary: fc.dictionary(fc.string(), tie("value")!) },
+          { weight: 2, arbitrary: fc.array(tie("value")!, { maxLength: 5 }) },
+        ),
+      })).value;
+
+      await fc.assert(
+        fc.asyncProperty(jsonValue, async (input) => {
+          const result = await jsonToJavascript(input, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Build executable code
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Normalize for comparison (handles NaN, etc.)
+          const normalizedOriginal = JSON.parse(JSON.stringify(input));
+          const normalizedResult = JSON.parse(JSON.stringify(parsedResult));
+          expect(normalizedResult).toEqual(normalizedOriginal);
+        }),
+        { numRuns: 3 }, // Reduced runs for faster test execution
+      );
+    });
+
+    it("should generate executable code with default convert function", async () => {
+      const jsonValue = fc.oneof(
+        fc.string(),
+        fc.integer(),
+        fc.float(),
+        fc.boolean(),
+        fc.constant(null),
+        fc.dictionary(
+          fc.string(),
+          fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+        ),
+        fc.array(
+          fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+          { maxLength: 5 },
+        ),
+      );
+
+      await fc.assert(
+        fc.asyncProperty(jsonValue, async (input) => {
+          const result = await convert(input);
+
+          // Build executable code using the default function wrapper
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(x()))`
+            : `${result.code}\nconsole.log(JSON.stringify(x()))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Verify roundtrip matches original
+          const normalizedOriginal = JSON.parse(JSON.stringify(input));
+          const normalizedResult = JSON.parse(JSON.stringify(parsedResult));
+          expect(normalizedResult).toEqual(normalizedOriginal);
+        }),
+        { numRuns: 3 },
+      );
+    });
   });
 });
 
