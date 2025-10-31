@@ -31,6 +31,7 @@ FC_FACTOR=10 mise run test
 ```
 
 This is useful for:
+
 - **Local development**: Use default (`FC_FACTOR=1` or unset) for faster feedback
 - **CI/CD**: Use higher values like `FC_FACTOR=10` for more comprehensive property-based testing
 
@@ -51,6 +52,10 @@ mise run workflows:clear
 ```bash
 mise run actionlint
 ```
+
+## Playpen folder for temporary scripts
+
+The `playpen/` folder is git-ignored and used for temporary scripts during development.
 
 ## Publishing
 
