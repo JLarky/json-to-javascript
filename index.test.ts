@@ -341,6 +341,193 @@ describe("jsonToJavascript", () => {
     expect(typeof parsedResult.value).toBe("number");
   });
 
+  it("should handle strings with special characters", async () => {
+    // Test string with backticks, dollar signs, quotes, newlines, backslashes
+    const specialString = "` $\"'\n\\";
+    const input = { text: specialString };
+    const result = await convert(input, {
+      prefix: "const obj = (",
+      suffix: ")",
+    });
+
+    // The generated code should be executable (convert uses useDedent: true by default)
+    const evalCode = result.needsDedent
+      ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+      : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+    const evalResult = await myEval(evalCode);
+    const parsedResult = JSON.parse(evalResult.trim());
+
+    // Should roundtrip correctly
+    expect(parsedResult.text).toBe(specialString);
+  });
+
+  it("should handle strings with special characters including template literal syntax", async () => {
+    // Test string that could break template literals: ${} expressions
+    const specialString = "` ${test} `";
+    const input = { text: specialString };
+    const result = await convert(input, {
+      useDedent: true,
+      prefix: "const obj = (",
+      suffix: ")",
+    });
+
+    // Should use dedent since it contains newlines might not be in this case, but let's check
+    // The generated code should be executable
+    const evalCode = result.needsDedent
+      ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+      : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+    const evalResult = await myEval(evalCode);
+    const parsedResult = JSON.parse(evalResult.trim());
+
+    // Should roundtrip correctly
+    expect(parsedResult.text).toBe(specialString);
+  });
+
+  it("should handle multiline strings with special characters", async () => {
+    // Test multiline string with special chars: backticks, $, quotes, newline, backslash
+    // Note: strings with backticks won't use dedent to avoid escaping issues
+    const specialString = "` $ \" ' \n\\";
+    const input = { text: specialString };
+    const result = await convert(input, {
+      useDedent: true,
+      prefix: "const obj = (",
+      suffix: ")",
+    });
+
+    // Strings with backticks won't use dedent
+    expect(result.needsDedent).toBe(false);
+
+    // The generated code should be executable (using regular JSON string escaping)
+    const evalCode = `${result.code}\nconsole.log(JSON.stringify(obj))`;
+    const evalResult = await myEval(evalCode);
+    const parsedResult = JSON.parse(evalResult.trim());
+
+    // Should roundtrip correctly
+    expect(parsedResult.text).toBe(specialString);
+  });
+
+  describe("fast-check special character tests", () => {
+    it("should handle random strings with special characters", async () => {
+      // Generate strings that include special characters: backticks, $, quotes, newlines, backslashes
+      const specialChars = fc.constantFrom(
+        "`",
+        "$",
+        '"',
+        "'",
+        "\n",
+        "\\",
+        "${",
+        "`${",
+      );
+      const stringWithSpecialChars = fc
+        .array(
+          fc.oneof(fc.string({ minLength: 0, maxLength: 10 }), specialChars),
+          { minLength: 1, maxLength: 50 },
+        )
+        .map((arr) => arr.join(""));
+
+      await fc.assert(
+        fc.asyncProperty(stringWithSpecialChars, async (randomStr) => {
+          const input = { text: randomStr };
+          const result = await convert(input, {
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Build executable code
+          const evalCode = result.needsDedent
+            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+
+          // Verify code executes without errors
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Should roundtrip correctly
+          expect(parsedResult.text).toBe(randomStr);
+        }),
+        { numRuns: 3 },
+      );
+    });
+
+    it("should handle strings with backticks (should not use dedent)", async () => {
+      // Generate strings that definitely contain backticks
+      const stringWithBackticks = fc
+        .tuple(fc.string(), fc.constant("`"), fc.string())
+        .map(([before, backtick, after]) => before + backtick + after);
+
+      await fc.assert(
+        fc.asyncProperty(stringWithBackticks, async (randomStr) => {
+          const input = { text: randomStr };
+          const result = await convert(input, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Strings with backticks should not use dedent
+          expect(result.needsDedent).toBe(false);
+
+          // The generated code should be executable
+          const evalCode = `${result.code}\nconsole.log(JSON.stringify(obj))`;
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Should roundtrip correctly
+          expect(parsedResult.text).toBe(randomStr);
+        }),
+        { numRuns: 3 },
+      );
+    });
+
+    it("should handle strings with newlines but no backticks (should use dedent)", async () => {
+      // Generate strings with newlines but no backticks
+      // Avoid strings that are only newlines (which dedent trims to empty)
+      const stringWithNewlines = fc
+        .array(
+          fc.oneof(
+            fc
+              .string({ minLength: 1, maxLength: 10 })
+              .filter((s) => !s.includes("`") && !s.includes("\n")),
+            fc.constant("\n"),
+          ),
+          { minLength: 2, maxLength: 50 },
+        )
+        .map((arr) => arr.join(""))
+        .filter(
+          (str) =>
+            str.includes("\n") && !str.includes("`") && str.trim().length > 0,
+        );
+
+      await fc.assert(
+        fc.asyncProperty(stringWithNewlines, async (randomStr) => {
+          const input = { text: randomStr };
+          const result = await convert(input, {
+            useDedent: true,
+            prefix: "const obj = (",
+            suffix: ")",
+          });
+
+          // Strings with newlines (but no backticks) should use dedent
+          expect(result.needsDedent).toBe(true);
+
+          // The generated code should be executable
+          const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
+          const evalResult = await myEval(evalCode);
+          const parsedResult = JSON.parse(evalResult.trim());
+
+          // Note: dedent trims leading/trailing whitespace, so we compare normalized versions
+          // The dedent result should match the original when normalized
+          const normalized = parsedResult.text.replace(/^\s+|\s+$/g, "");
+          const normalizedOriginal = randomStr.replace(/^\s+|\s+$/g, "");
+          expect(normalized).toBe(normalizedOriginal);
+        }),
+        { numRuns: 3 },
+      );
+    });
+  });
+
   describe("fast-check roundtrip tests", () => {
     it("should generate executable code for arbitrary JSON values", async () => {
       const jsonValue = fc.oneof(

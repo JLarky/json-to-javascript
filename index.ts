@@ -165,7 +165,11 @@ export async function jsonToJavascript(
     (key, value) => {
       let replacedValue = value;
       if (useDedent) {
-        if (typeof value === "string" && value.includes("\n")) {
+        if (
+          typeof value === "string" &&
+          value.includes("\n") &&
+          !value.includes("`")
+        ) {
           replacedValue = randomString + markerCount++;
           multilineStrings.push(value);
         }
