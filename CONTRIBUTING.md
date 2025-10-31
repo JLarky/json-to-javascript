@@ -24,6 +24,16 @@ mise run format
 mise run test
 ```
 
+You can configure fast-check iterations via the `FC_FACTOR` environment variable. By default, each fast-check test runs 3 iterations. Setting `FC_FACTOR=10` will run 30 iterations per test (10x more thorough testing):
+
+```bash
+FC_FACTOR=10 mise run test
+```
+
+This is useful for:
+- **Local development**: Use default (`FC_FACTOR=1` or unset) for faster feedback
+- **CI/CD**: Use higher values like `FC_FACTOR=10` for more comprehensive property-based testing
+
 - workflows:build: Generate GitHub Actions workflows from TypeScript
 
 ```bash
