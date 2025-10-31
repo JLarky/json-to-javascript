@@ -727,6 +727,52 @@ describe("jsonToJavascript", () => {
   });
 });
 
+describe("escaping issues", () => {
+  it.skip("reproduce string inside string eval crash", async () => {
+    const input =
+      "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
+    const result = await convert(input);
+    expect(result.needsDedent).toBe(true);
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js =  dedent\`
+          const commentBody = \\\`string with ticks in it \\\\\`git rebase -i\\\\\`
+          last line\\\`
+          
+        \`;
+        return js;
+      }
+      "
+    `);
+    const { evalResult } = await roundTripTest(input).catch(() => ({
+      evalResult: "crashed",
+    }));
+    expect(evalResult.trim()).toMatchInlineSnapshot(`"crashed"`);
+  });
+  it("new test", async () => {
+    const input =
+      "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
+    const result = await convert(input);
+    expect(result.needsDedent).toBe(false);
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js =
+          "const commentBody = \`string with ticks in it \\\\\`git rebase -i\\\\\`\\nlast line\`\\n";
+        return js;
+      }
+      "
+    `);
+    const { evalResult } = await roundTripTest(input).catch(() => ({
+      evalResult: "crashed",
+    }));
+    expect(evalResult.trim()).toMatchInlineSnapshot(`
+      "const commentBody = \`string with ticks in it \\\`git rebase -i\\\`
+      last line\`"
+    `);
+    expect(evalResult.trim()).toBe(input.trim());
+  });
+});
+
 const myEval = async (code: string) => {
   return $`node -e ${code}`.text();
 };
