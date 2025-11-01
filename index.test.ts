@@ -6,6 +6,7 @@ import {
 } from "./index";
 import { $ } from "bun";
 import fc from "fast-check";
+import { myEval } from "./test-utils";
 
 // Configure fast-check iterations from environment variable
 // FC_FACTOR=10 means 10x more tests than default
@@ -675,16 +676,6 @@ describe("fast-check roundtrip tests", () => {
     );
   });
 });
-
-const myEval = async (code: string) => {
-  const tmpFileName = `./playpen/tmp-node-eval/node_eval_${Date.now()}_${Math.random()
-    .toString(36)
-    .slice(2)}.cjs`;
-  await Bun.write(tmpFileName, code);
-  const out = await $`node ${tmpFileName}`.text();
-  await $`rm -f ${tmpFileName}`;
-  return out;
-};
 
 function normalizeForComparison(value: unknown): unknown {
   if (typeof value === "number") {
