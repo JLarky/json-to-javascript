@@ -448,7 +448,8 @@ describe("jsonToJavascript", () => {
           if (randomStr.includes("\r")) return true;
           // Filter out edge cases with backslashes that may not round-trip perfectly
           // due to how trim() interacts with backslashes in template literals
-          if (randomStr.trimEnd().endsWith("\\") && randomStr.includes("\n")) return true;
+          if (randomStr.trimEnd().endsWith("\\") && randomStr.includes("\n"))
+            return true;
           // Filter out edge case: backslash followed by newline followed by backtick
           if (randomStr.includes("\\\n`")) return true;
           // Filter out $& which may interfere with marker replacement
@@ -465,8 +466,12 @@ describe("jsonToJavascript", () => {
           const parsedResult = JSON.parse(evalResult.trim());
           if (result.needsDedent) {
             // Use normalizeForDedent-like comparison for strings with newlines
-            const expected = randomStr.includes("\n") ? randomStr.trim() : randomStr;
-            const actual = parsedResult.text.includes("\n") ? parsedResult.text.trim() : parsedResult.text;
+            const expected = randomStr.includes("\n")
+              ? randomStr.trim()
+              : randomStr;
+            const actual = parsedResult.text.includes("\n")
+              ? parsedResult.text.trim()
+              : parsedResult.text;
             expect(actual).toBe(expected);
           } else {
             expect(parsedResult.text).toBe(randomStr);
@@ -483,7 +488,13 @@ describe("jsonToJavascript", () => {
           maxLength: 50,
         })
         .map((arr) => arr.join(""))
-        .filter((str) => str.includes("\n") && str.trim().length > 0 && !str.includes("\r") && !str.includes("$&")); // Exclude CRLF and $& edge case
+        .filter(
+          (str) =>
+            str.includes("\n") &&
+            str.trim().length > 0 &&
+            !str.includes("\r") &&
+            !str.includes("$&"),
+        ); // Exclude CRLF and $& edge case
 
       await fc.assert(
         fc.asyncProperty(stringWithNewlines, async (randomStr) => {
