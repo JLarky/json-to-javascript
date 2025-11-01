@@ -10,50 +10,18 @@
     with_double_dollar: "Literal dollar: $$\nAmount: $$100\nMultiple: $$$$200",
     with_backslash: "C:\\Program Files\\App\nNext line\\ending",
     mixed_risky: "`Code` $var \\path\nSecond ${line} here",
-    trailing_spaces:  dedent`
-      Line A  
-      Line B   
-        Line C    
-    `,
-    leading_and_blank:  dedent`
-      
-      
-      Alpha
-      
-      Beta
-      
-      
-      Gamma
-      
-    `,
+    trailing_spaces: `Line A  \nLine B   \n  Line C    `,
+    leading_and_blank: `\n\nAlpha\n\nBeta\n\n\nGamma\n`,
     emoji_unicode:  dedent`
       Status: ✅
       Rocket: 🚀
       Faces: 😀😃😄
     `,
-    crlf_variant:  dedent`
-      Line1
-      Line2
-      Line3
-    `,
+    crlf_variant: `Line1\r\nLine2\r\nLine3`,
     escaped_vs_real:
       "Real line 1\nReal line 2\\nEscaped newline sequence literal\\nAnother line",
-    deep_indent_literal:  dedent`
-      function someCode() {
-          if (test) {
-              console.log("indented block");
-          }
-      }
-      
-    `,
-    deep_indent_folded:  dedent`
-      function someCode() {
-          if (test) {
-              console.log("indented block");
-          }
-      }
-      
-    `,
+    deep_indent_literal: `function someCode() {\n    if (test) {\n        console.log("indented block");\n    }\n}\n`,
+    deep_indent_folded: `function someCode() {\n    if (test) {\n        console.log("indented block");\n    }\n}\n`,
     github_expression_step:
       'echo "::set-output name=tag::${GITHUB_REF##*/}" # risky due to ${}\necho "Branch is ${GITHUB_REF}"\n',
     github_expression_inline:
@@ -64,45 +32,18 @@
       '```bash\necho "Hello $USER" # inside code fence\necho `date`\n```\n',
     mixed_markup:
       "### Heading Level 3\nParagraph with *italic* and **bold** and `$inline` code.\nList:\n- Item 1\n- Item 2 with `tick` and $amount\n",
-    block_with_trailing_ws:  dedent`
-      line with two spaces  
-      line with tab	
-      line with mix
-      
-    `,
-    folded_ending_blank:  dedent`
-      This is a folded line followed by another
-      
-    `,
-    literal_start_blank:  dedent`
-      
-      Indented after blank
-      Second line
-      
-    `,
+    block_with_trailing_ws: `line with two spaces  \nline with tab	\nline with mix\n`,
+    folded_ending_blank: `This is a folded line followed by another\n`,
+    literal_start_blank: `\nIndented after blank\nSecond line\n`,
     looks_like_template: "${notActually} plain text\nAnother line",
     json_like:
       '{\n  "name": "Example",\n  "value": "Some $value with `tick` and \\\\backslash"\n}\n',
     yaml_in_yaml: "key: value\nother: $money\nnote: `inline`\n",
     backslash_continuations:
       'echo "first line" \\\necho "second line" \\\necho "third line"\n',
-    varying_indent:  dedent`
-      no indent
-        two spaces
-          four spaces
-            six spaces
-      
-    `,
-    empty_multiline:  dedent`
-      
-      
-      
-      
-    `,
-    "stale-pr-message":  dedent`
-      No PR activity in 30 days.
-      
-    `,
+    varying_indent: `no indent\n  two spaces\n    four spaces\n      six spaces\n`,
+    empty_multiline: `\n\n\n`,
+    "stale-pr-message": `No PR activity in 30 days.\n`,
     run: 'curl -L \\\n-X POST \\\n-H "Accept: application/vnd.github+json" \\\n-H "Authorization: Bearer ${{ secrets.GHA_PAT }}" \\\n-H "X-GitHub-Api-Version: 2022-11-28" \\\n-d \'{"labels":["stale"]}\'\n',
     escaped_backticks_code:
       'const commentBody = `string with ticks in it \\`git rebase -i\\`\\nlast line`\\n    echo "Done"\n',

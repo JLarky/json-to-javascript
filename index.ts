@@ -134,6 +134,41 @@ export function shouldConvertMultiline(value: string): boolean {
 }
 
 /**
+ * Check if a string needs exact preservation (should not use dedent).
+ * Strings with leading/trailing newlines, trailing spaces, or CRLF need preservation.
+ */
+function needsExactPreservation(value: string): boolean {
+  // Check for leading newlines
+  if (value.startsWith("\n") || value.startsWith("\r\n")) {
+    return true;
+  }
+  // Check for trailing newlines
+  if (value.endsWith("\n") || value.endsWith("\r\n")) {
+    return true;
+  }
+  // Check for trailing spaces on the last line
+  const lastNewlineIndex = Math.max(
+    value.lastIndexOf("\n"),
+    value.lastIndexOf("\r\n"),
+  );
+  if (lastNewlineIndex >= 0) {
+    const lastLine = value.slice(lastNewlineIndex + (value.lastIndexOf("\r\n") === lastNewlineIndex ? 2 : 1));
+    if (lastLine.trimEnd() !== lastLine) {
+      return true;
+    }
+  }
+  // Check for CRLF line endings
+  if (value.includes("\r\n")) {
+    return true;
+  }
+  // Check if string is only newlines (empty_multiline case)
+  if (value.trim() === "" && value.includes("\n")) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Convert JSON data to JavaScript code literals.
  *
  * This function transforms JSON into properly formatted JavaScript code, with optional support
@@ -169,6 +204,7 @@ export async function jsonToJavascript(
   const useDedent = options.useDedent ?? false;
   let markerCount = 0;
   const multilineStrings: string[] = [];
+  const needsPreservation: boolean[] = [];
   const string = JSON.stringify(
     json,
     (key, value) => {
@@ -177,6 +213,7 @@ export async function jsonToJavascript(
         if (typeof value === "string" && shouldConvertMultiline(value)) {
           replacedValue = randomString + markerCount++;
           multilineStrings.push(value);
+          needsPreservation.push(needsExactPreservation(value));
         }
       }
       return (
@@ -205,20 +242,48 @@ export async function jsonToJavascript(
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
-    const escaped = multilineStrings[index]!.replaceAll("`", "\\`").replaceAll(
-      "${",
-      "\\${",
-    );
-    const marker = randomString + index;
-    const line = formatted.split("\n").find((line) => line.includes(marker));
-    const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", `\n${indent}  `);
-    const linesExpression = [
-      `${dedentPrefix}\``,
-      `${indent}  ${indented}`, //
-      `${indent}\`${dedentSuffix}`,
-    ].join("\n");
-    formatted = formatted.replace(`"${marker}"`, linesExpression);
+    const originalString = multilineStrings[index]!;
+    const preserve = needsPreservation[index]!;
+    
+    // For strings that need exact preservation, we can't use dedent
+    // We'll use a regular template literal with escape sequences to preserve exact content
+    if (preserve) {
+      const marker = randomString + index;
+      
+      // Escape backticks and ${ for template literal
+      let escaped = originalString.replaceAll("`", "\\`").replaceAll(
+        "${",
+        "\\${",
+      );
+      
+      // Use escape sequences for all newlines to preserve exact content
+      // This includes preserving CRLF vs LF differences
+      // Replace CRLF first (before replacing individual \r or \n)
+      escaped = escaped.replaceAll("\r\n", "\\r\\n");
+      // Then replace remaining standalone \n (not part of CRLF)
+      escaped = escaped.replaceAll("\n", "\\n");
+      // Replace any standalone \r (not part of CRLF)
+      escaped = escaped.replaceAll(/\r/g, "\\r");
+      
+      // Use a single-line template literal with escape sequences
+      formatted = formatted.replace(`"${marker}"`, "`" + escaped + "`");
+    } else {
+      // Use dedent for strings that don't need exact preservation
+      const escaped = originalString.replaceAll("`", "\\`").replaceAll(
+        "${",
+        "\\${",
+      );
+      const marker = randomString + index;
+      const line = formatted.split("\n").find((line) => line.includes(marker));
+      const indent = line?.match(/^(\s*)/)?.[1] || "";
+      const indented = escaped.replaceAll("\n", `\n${indent}  `);
+      const linesExpression = [
+        `${dedentPrefix}\``,
+        `${indent}  ${indented}`, //
+        `${indent}\`${dedentSuffix}`,
+      ].join("\n");
+      formatted = formatted.replace(`"${marker}"`, linesExpression);
+    }
   }
   return {
     code: formatted,
