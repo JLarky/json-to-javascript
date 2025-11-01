@@ -125,12 +125,33 @@ export interface JavascriptOutput {
 }
 
 export function shouldConvertMultiline(value: string): boolean {
-  return (
-    value.includes("\n") &&
-    !value.includes("`") &&
-    !value.includes("\\") &&
-    !value.includes("$")
-  );
+  if (!value.includes("\n")) return false;
+  if (value.includes("`") || value.includes("\\") || value.includes("$")) {
+    return false;
+  }
+  // Dedent trims leading/trailing blank lines and trailing whitespace on last line
+  // So we can't use dedent for strings with these characteristics
+  // Also, strings with CRLF should not use dedent (dedent only handles LF)
+  if (value.includes("\r\n")) return false;
+  const lines = value.split("\n");
+  const firstNonEmpty = lines.findIndex(l => l.length > 0);
+  const lastNonEmpty = (() => {
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i]!.length > 0) return i;
+    }
+    return -1;
+  })();
+  // If all lines are empty (only newlines), dedent will trim everything
+  if (firstNonEmpty === -1) return false;
+  // Check for leading newlines
+  if (firstNonEmpty > 0) return false;
+  // Check for trailing newlines
+  if (lastNonEmpty >= 0 && lastNonEmpty < lines.length - 1) return false;
+  // Check for trailing spaces on last line
+  if (lastNonEmpty >= 0 && lines[lastNonEmpty]!.trimEnd() !== lines[lastNonEmpty]!) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -205,17 +226,81 @@ export async function jsonToJavascript(
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
-    const escaped = multilineStrings[index]!.replaceAll("`", "\\`").replaceAll(
-      "${",
-      "\\${",
-    );
+    const originalString = multilineStrings[index]!;
     const marker = randomString + index;
     const line = formatted.split("\n").find((line) => line.includes(marker));
     const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", `\n${indent}  `);
+    
+    // Preserve CRLF exactly as it is - don't normalize for output
+    // But for processing with dedent, we need LF
+    
+    // Split the string while preserving CRLF vs LF
+    // Split by both \r\n and \n, but we need to know which was used
+    // For simplicity with dedent (which only handles \n), we'll convert \r\n to \n for processing
+    // but this means CRLF strings won't use dedent (which is fine since they have edge cases)
+    const hasCRLF = originalString.includes("\r\n");
+    const processingString = hasCRLF ? originalString.replaceAll("\r\n", "\n") : originalString;
+    const processingEscaped = processingString.replaceAll("`", "\\`").replaceAll("${", "\\${");
+    const allLines = processingEscaped.split("\n");
+    
+    // Find first non-empty line to determine where leading newlines end
+    let firstContentLineIdx = allLines.findIndex(line => line.length > 0);
+    if (firstContentLineIdx === -1) {
+      // String contains only newlines (empty lines)
+      firstContentLineIdx = allLines.length;
+    }
+    
+    // Find last non-empty line to determine where trailing newlines start
+    let lastContentLineIdx = -1;
+    for (let i = allLines.length - 1; i >= 0; i--) {
+      if (allLines[i]!.length > 0) {
+        lastContentLineIdx = i;
+        break;
+      }
+    }
+    
+    // Build the indented string
+    const indentedParts: string[] = [];
+    
+    // Add leading empty lines (these are the leading newlines)
+    for (let i = 0; i < firstContentLineIdx; i++) {
+      indentedParts.push("\n");
+    }
+    
+    // Add content lines with proper indentation
+    if (firstContentLineIdx <= lastContentLineIdx) {
+      for (let i = firstContentLineIdx; i <= lastContentLineIdx; i++) {
+        const line = allLines[i]!;
+        if (i === firstContentLineIdx && firstContentLineIdx === 0) {
+          // First line, no leading newlines - add base indentation
+          indentedParts.push(`${indent}  ${line}`);
+        } else {
+          // Subsequent content line - add indentation after newline
+          indentedParts.push(`\n${indent}  ${line}`);
+        }
+      }
+    }
+    
+    // Add trailing empty lines (these are the trailing newlines)
+    for (let i = lastContentLineIdx + 1; i < allLines.length; i++) {
+      indentedParts.push("\n");
+    }
+    
+    let indented = indentedParts.join("");
+    
+    // If original had CRLF, convert back (but dedent uses \n, so we need to handle this)
+    // Actually, since strings with CRLF won't use dedent (they're treated as having edge cases),
+    // this code path shouldn't be hit for CRLF strings. But just in case:
+    if (hasCRLF) {
+      // Replace \n with \r\n in the indented string
+      indented = indented.replaceAll("\n", "\r\n");
+      // But the template literal structure uses \n, so we need to adjust
+      // Actually, this is complex - let's just not use dedent for CRLF strings
+    }
+    
     const linesExpression = [
       `${dedentPrefix}\``,
-      `${indent}  ${indented}`, //
+      `${indent}  ${indented}`,
       `${indent}\`${dedentSuffix}`,
     ].join("\n");
     formatted = formatted.replace(`"${marker}"`, linesExpression);
