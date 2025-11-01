@@ -22,7 +22,7 @@ describe("fixture classification", () => {
       fancierOutput.code,
     );
     const fancierOut = await myEval(
-      'const {lines: dedent} = require("../../lines.ts");\nconst x =' +
+      'const {lines: dedent} = require("@jlarky/gha-ts/utils");\nconst x =' +
         fancierOutput.code +
         "console.log(JSON.stringify(x, null, 2))",
     );
@@ -48,7 +48,33 @@ describe("fixture classification", () => {
 
     // expects
     expect(out.trimEnd()).toBe(jsonDoc);
-    expect(fancierOut.trimEnd()).toBe(jsonDoc);
+    // gha-ts lines normalizes trailing newlines (always ensures one at end),
+    // so we normalize both sides by removing trailing newlines for comparison
+    const normalizeTrailingNewlines = (s: string): string => {
+      return s.replace(/\n+$/, "");
+    };
+    const normalizeObj = (obj: unknown): unknown => {
+      if (typeof obj === "string") {
+        return normalizeTrailingNewlines(obj);
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(normalizeObj);
+      }
+      if (obj !== null && typeof obj === "object") {
+        const result: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(obj)) {
+          result[key] = normalizeObj(value);
+        }
+        return result;
+      }
+      return obj;
+    };
+    const fancierOutObj = JSON.parse(fancierOut.trim());
+    const normalizedFancierOut = normalizeObj(fancierOutObj);
+    const normalizedJsonDoc = normalizeObj(JSON.parse(jsonDoc));
+    expect(JSON.stringify(normalizedFancierOut, null, 2)).toBe(
+      JSON.stringify(normalizedJsonDoc, null, 2),
+    );
 
     // For the real dedent path, compare strings one-by-one with trim normalization
     const actualDedentObj = JSON.parse(fancierOutDedent.trim());
