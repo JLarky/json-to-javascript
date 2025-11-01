@@ -22,7 +22,7 @@ describe("fixture classification", () => {
       fancierOutput.code,
     );
     const fancierOut = await myEval(
-      'const dedent = require("dedent");\nconst x =' +
+      'const {lines: dedent} = require("../../lines.ts");\nconst x =' +
         fancierOutput.code +
         "console.log(JSON.stringify(x, null, 2))",
     );
