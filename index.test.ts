@@ -761,10 +761,9 @@ async function roundTripTestLines(input: unknown) {
     prefix: "console.log(",
     suffix: ")",
   });
-  const linesPath = require.resolve("./lines.ts");
   const evalResult = await myEval(`
-        const { lines } = require(${JSON.stringify(linesPath)});
-        ${result.code}
-      `);
+    const { lines } = require("@jlarky/gha-ts/utils");
+    ${result.code}
+  `);
   return { evalResult, result };
 }
