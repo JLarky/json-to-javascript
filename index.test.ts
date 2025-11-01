@@ -10,17 +10,6 @@ import fc from "fast-check";
 // Configure fast-check iterations from environment variable
 // FC_FACTOR=10 means 10x more tests than default
 const FC_FACTOR = parseFloat(process.env.FC_FACTOR || "1");
-function withBackticksAllowed<T>(fn: () => Promise<T>): () => Promise<T> {
-  return async () => {
-    const prev = process.env.JSON_TO_JS_DEBUG_ALLOW_BACKTICKS;
-    process.env.JSON_TO_JS_DEBUG_ALLOW_BACKTICKS = "1";
-    try {
-      return await fn();
-    } finally {
-      process.env.JSON_TO_JS_DEBUG_ALLOW_BACKTICKS = prev;
-    }
-  };
-}
 
 async function convert(input: unknown, options: Options = {}) {
   return await jsonToJavascript(input, {
@@ -36,18 +25,16 @@ describe("jsonToJavascript", () => {
     const input = { name: "John", age: 30 };
     const result = await convert(input);
     expect(result.needsDedent).toBe(false);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = { name: "John", age: 30 };
-          return js;
-        }
-        "
-      `,
-    );
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = { name: "John", age: 30 };
+        return js;
+      }
+      "
+      `);
   });
 
-  it("should replace strings with newlines with MARKER", async () => {
+  it("should replace strings with newlines with template literal", async () => {
     const input = { text: "Hello\nWorld" };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
@@ -60,7 +47,7 @@ describe("jsonToJavascript", () => {
         return js;
       }
       "
-    `);
+      `);
   });
 
   it("should handle arrays with mixed content", async () => {
@@ -76,7 +63,7 @@ describe("jsonToJavascript", () => {
         return js;
       }
       "
-    `);
+      `);
   });
 
   it("should handle nested objects with newlines", async () => {
@@ -88,24 +75,22 @@ describe("jsonToJavascript", () => {
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = {
-            outer: {
-              inner:  dedent\`
-                text
-                with
-                newlines
-              \`,
-              normal: "no newlines",
-            },
-          };
-          return js;
-        }
-        "
-      `,
-    );
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = {
+          outer: {
+            inner:  dedent\`
+              text
+              with
+              newlines
+            \`,
+            normal: "no newlines",
+          },
+        };
+        return js;
+      }
+      "
+      `);
   });
 
   it("should preserve non-string values", async () => {
@@ -118,36 +103,32 @@ describe("jsonToJavascript", () => {
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(false);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = {
-            string: "hello",
-            number: 42,
-            boolean: true,
-            null: null,
-            array: [1, 2, 3],
-          };
-          return js;
-        }
-        "
-      `,
-    );
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = {
+          string: "hello",
+          number: 42,
+          boolean: true,
+          null: null,
+          array: [1, 2, 3],
+        };
+        return js;
+      }
+      "
+      `);
   });
 
   it("should handle empty strings", async () => {
     const input = { empty: "" };
     const result = await convert(input);
     expect(result.needsDedent).toBe(false);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = { empty: "" };
-          return js;
-        }
-        "
-      `,
-    );
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = { empty: "" };
+        return js;
+      }
+      "
+      `);
   });
 
   it("should handle strings with only newlines", async () => {
@@ -163,7 +144,7 @@ describe("jsonToJavascript", () => {
         return js;
       }
       "
-    `);
+      `);
   });
 
   it("how dedent trims whitespace", async () => {
@@ -185,11 +166,11 @@ describe("jsonToJavascript", () => {
       ,
         "needsDedent": true,
       }
-    `);
+      `);
     expect(evalResult).toMatchInlineSnapshot(`
       "{ text: 'x \\n\\nx' }
       "
-    `);
+      `);
   });
 
   it("how lines trims whitespace", async () => {
@@ -211,11 +192,11 @@ describe("jsonToJavascript", () => {
       ,
         "needsDedent": true,
       }
-    `);
+      `);
     expect(evalResult).toMatchInlineSnapshot(`
       "{ text: 'x \\n  \\n   x\\n' }
       "
-    `);
+      `);
   });
 
   it("should handle multiple newline variations", async () => {
@@ -226,25 +207,24 @@ describe("jsonToJavascript", () => {
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = {
-            unix:  dedent\`
-              line1
-              line2
-            \`,
-            carriage: "line1\\rline2",
-            windows:  dedent\`
-              line1
-              line2
-            \`,
-          };
-          return js;
-        }
-        "
-      `,
-    );
+
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = {
+          unix:  dedent\`
+            line1
+            line2
+          \`,
+          carriage: "line1\\rline2",
+          windows:  dedent\`
+            line1
+            line2
+          \`,
+        };
+        return js;
+      }
+      "
+      `);
   });
 
   it("should handle deeply nested structures", async () => {
@@ -261,35 +241,33 @@ describe("jsonToJavascript", () => {
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
-    expect(result.code).toMatchInlineSnapshot(
-      `
-        "function x() {
-          const js = {
-            level1: {
+    expect(result.code).toMatchInlineSnapshot(`
+      "function x() {
+        const js = {
+          level1: {
+            test:  dedent\`
+              multi
+              line
+              text
+            \`,
+            level2: {
               test:  dedent\`
                 multi
                 line
                 text
               \`,
-              level2: {
-                test:  dedent\`
-                  multi
-                  line
-                  text
-                \`,
-                level3: { text:  dedent\`
-                  multi
-                  line
-                  text
-                \` },
-              },
+              level3: { text:  dedent\`
+                multi
+                line
+                text
+              \` },
             },
-          };
-          return js;
-        }
-        "
-      `,
-    );
+          },
+        };
+        return js;
+      }
+      "
+      `);
   });
 
   it("should handle random strings correctly", async () => {
@@ -297,10 +275,10 @@ describe("jsonToJavascript", () => {
       fc.asyncProperty(fc.string(), async (randomStr) => {
         const input = { text: randomStr };
         const result = await convert(input);
-        const expected = shouldConvertMultiline(randomStr, {});
+        const expected = shouldConvertMultiline(randomStr);
         expect(result.needsDedent).toBe(expected);
         const evalCode = expected
-          ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(x()))`
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(x()))`
           : `${result.code}\nconsole.log(JSON.stringify(x()))`;
         const evalResult = await myEval(evalCode);
         const parsedResult = JSON.parse(evalResult.trim());
@@ -325,7 +303,7 @@ describe("jsonToJavascript", () => {
         });
 
         const evalCode = result.needsDedent
-          ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
           : `${result.code}\nconsole.log(JSON.stringify(obj))`;
 
         const evalResult = await myEval(evalCode);
@@ -352,29 +330,22 @@ describe("jsonToJavascript", () => {
     expect(typeof parsedResult.value).toBe("number");
   });
 
-  it("should handle strings with special characters", async () => {
-    const specialString = "` $\"'\n\\";
+  it("should handle strings with special characters (excluded by heuristic)", async () => {
+    const specialString = "` $\"'\n\\"; // contains backtick, dollar, backslash
     const input = { text: specialString };
     const result = await convert(input, {
       prefix: "const obj = (",
       suffix: ")",
     });
-    // Conservative heuristic excludes backtick; debug env JSON_TO_JS_DEBUG_ALLOW_BACKTICKS=1 can relax this (relax flags removed)
     expect(result.needsDedent).toBe(false);
-    // Backtick still blocks conversion; relaxed flags removed.
-    const relaxed = await convert(input, {
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(relaxed.needsDedent).toBe(false); // backtick still blocks unless debug env set
-    const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
+    const evalCode = `${result.code}\nconsole.log(JSON.stringify(obj))`;
     const evalResult = await myEval(evalCode);
     const parsedResult = JSON.parse(evalResult.trim());
     expect(parsedResult.text.trim()).toBe(specialString.trim());
   });
 
-  it("should handle strings with special characters including template literal syntax", async () => {
-    const specialString = "` ${test} `";
+  it("should handle strings with template literal syntax", async () => {
+    const specialString = "` ${test} `"; // backtick + ${
     const input = { text: specialString };
     const result = await convert(input, {
       useDedent: true,
@@ -388,9 +359,8 @@ describe("jsonToJavascript", () => {
     expect(parsedResult.text).toBe(specialString);
   });
 
-  it("should handle multiline strings with special characters", async () => {
-    // Conservative heuristic: newline + no risky chars; this contains backtick so excluded.
-    const specialString = "` $ \" ' \n\\";
+  it("should exclude multiline strings with special characters (backtick, $ or backslash)", async () => {
+    const specialString = "` $ \" ' \n\\"; // newline + backtick + backslash
     const input = { text: specialString };
     const result = await convert(input, {
       useDedent: true,
@@ -398,36 +368,14 @@ describe("jsonToJavascript", () => {
       suffix: ")",
     });
     expect(result.needsDedent).toBe(false);
-    // Backtick still blocks conversion; relaxed flags removed.
-    const relaxed = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(relaxed.needsDedent).toBe(false);
-    const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
-    const evalResult = await myEval(evalCode);
-    const parsedResult = JSON.parse(evalResult.trim());
-    expect(parsedResult.text.trim()).toBe(specialString.trim());
-  });
-
-  it("should handle backslash followed by newline", async () => {
-    const specialString = "\\\n";
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(false); // excluded: backslash+newline alters semantics
     const evalCode = `${result.code}\nconsole.log(JSON.stringify(obj))`;
     const evalResult = await myEval(evalCode);
     const parsedResult = JSON.parse(evalResult.trim());
     expect(parsedResult.text.trim()).toBe(specialString.trim());
   });
 
-  it("should exclude double backslash before newline", async () => {
-    const specialString = "\\\\\n"; // two backslashes then newline
+  it("should exclude any string containing backslash", async () => {
+    const specialString = "\\\n"; // backslash newline
     const input = { text: specialString };
     const result = await convert(input, {
       useDedent: true,
@@ -435,75 +383,26 @@ describe("jsonToJavascript", () => {
       suffix: ")",
     });
     expect(result.needsDedent).toBe(false);
-    expect(shouldConvertMultiline(specialString, {})).toBe(false);
+    expect(shouldConvertMultiline(specialString)).toBe(false);
   });
-  it("should exclude triple backslash before newline", async () => {
-    const specialString = "\\\\\\\n"; // three backslashes then newline
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(false);
-    expect(shouldConvertMultiline(specialString, {})).toBe(false);
-  });
-  it("should exclude single trailing backslash at end", async () => {
-    const specialString = "line1\nline2\\"; // ends with one backslash
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(false);
-    expect(shouldConvertMultiline(specialString, {})).toBe(false);
-  });
-  it("should exclude multiple trailing backslashes at end", async () => {
-    const specialString = "line1\nline2\\\\\\\\"; // ends with four backslashes
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(false);
-    expect(shouldConvertMultiline(specialString, {})).toBe(false);
-  });
-  it("should include backslash not before newline and not at end", async () => {
-    const specialString = "line1\\x\nline2 end"; // backslash mid-string
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(true);
-    expect(shouldConvertMultiline(specialString, {})).toBe(true);
-    expect(result.code).toContain("dedent`");
-  });
-  it("should include backslash followed by space at end (not excluded)", async () => {
-    const specialString = "line1\nline2\\ "; // trailing backslash + space
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    // Currently heuristic only excludes strict /\\+$/ so this should be converted.
-    expect(result.needsDedent).toBe(true);
-    expect(shouldConvertMultiline(specialString, {})).toBe(true);
-  });
-  it("should include backslash followed by two spaces at end (not excluded)", async () => {
-    const specialString = "line1\nline2\\  "; // trailing backslash + two spaces
-    const input = { text: specialString };
-    const result = await convert(input, {
-      useDedent: true,
-      prefix: "const obj = (",
-      suffix: ")",
-    });
-    expect(result.needsDedent).toBe(true);
-    expect(shouldConvertMultiline(specialString, {})).toBe(true);
+
+  it("should exclude backslashes in various positions", async () => {
+    const cases = [
+      "line1\\x\nline2 end",
+      "line1\nline2\\",
+      "line1\nline2\\ ",
+      "line1\nline2\\  ",
+    ];
+    for (const specialString of cases) {
+      const input = { text: specialString };
+      const result = await convert(input, {
+        useDedent: true,
+        prefix: "const obj = (",
+        suffix: ")",
+      });
+      expect(result.needsDedent).toBe(false);
+      expect(shouldConvertMultiline(specialString)).toBe(false);
+    }
   });
 
   describe("fast-check special character tests", () => {
@@ -536,7 +435,7 @@ describe("jsonToJavascript", () => {
             suffix: ")",
           });
           const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+            ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
             : `${result.code}\nconsole.log(JSON.stringify(obj))`;
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
@@ -550,79 +449,7 @@ describe("jsonToJavascript", () => {
       );
     });
 
-    it("fc: should handle newline + backslashes without risky chars", async () => {
-      const gen = fc
-        .array(
-          fc.oneof(
-            fc.string({ maxLength: 5 }),
-            fc.constant("\\"),
-            fc.constant("\n"),
-          ),
-          { minLength: 2, maxLength: 30 },
-        )
-        .map((arr) => arr.join(""))
-        .filter((s) => s.includes("\n"))
-        .filter((s) => !s.includes("$") && !s.includes("`"))
-        .filter((s) => !/\\+\n/.test(s))
-        .filter((s) => !/\\+$/.test(s));
-
-      await fc.assert(
-        fc.asyncProperty(gen, async (str) => {
-          const input = { text: str };
-          const result = await convert(input, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          // shouldConvertMultiline should return true (no `$`, no backtick, no backslash-newline).
-          expect(shouldConvertMultiline(str, {})).toBe(true);
-          expect(result.needsDedent).toBe(true);
-          expect(result.code).toContain("dedent`");
-          const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          expect(parsedResult.text.trim()).toBe(str.trim());
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
-    });
-
-    it("should handle strings with backticks (dedent only if newline)", async () => {
-      const stringWithBackticks = fc
-        .tuple(fc.string(), fc.constant("`"), fc.string())
-        .map(([before, backtick, after]) => before + backtick + after);
-
-      await fc.assert(
-        fc.asyncProperty(stringWithBackticks, async (randomStr) => {
-          const input = { text: randomStr };
-          const result = await convert(input, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          const conservativeShould = shouldConvertMultiline(randomStr, {});
-          expect(result.needsDedent).toBe(conservativeShould);
-          if (conservativeShould) {
-            expect(result.code).toContain("dedent`");
-          } else {
-            expect(result.code).not.toContain("dedent`");
-          }
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
-            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          if (result.needsDedent) {
-            expect(parsedResult.text.trim()).toBe(randomStr.trim());
-          } else {
-            expect(parsedResult.text).toBe(randomStr);
-          }
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
-    });
-
-    it("should handle strings with newlines (conservative heuristic)", async () => {
+    it("should handle strings with newlines (simple heuristic)", async () => {
       const stringWithNewlines = fc
         .array(fc.oneof(fc.string({ maxLength: 10 }), fc.constant("\n")), {
           minLength: 2,
@@ -639,233 +466,220 @@ describe("jsonToJavascript", () => {
             prefix: "const obj = (",
             suffix: ")",
           });
-          const conservativeShould = shouldConvertMultiline(randomStr, {});
+          const conservativeShould = shouldConvertMultiline(randomStr);
           expect(result.needsDedent).toBe(conservativeShould);
           if (conservativeShould) {
             expect(result.code).toContain("dedent`");
           } else {
             expect(result.code).not.toContain("dedent`");
           }
-          const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
+          const evalCode = `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
-          expect(parsedResult.text.trim()).toBe(randomStr.trim());
+          if (conservativeShould) {
+            expect(parsedResult.text.trim()).toBe(randomStr.trim());
+          } else {
+            expect(parsedResult.text).toBe(randomStr);
+          }
         }),
         { numRuns: 10 * FC_FACTOR },
       );
     });
   });
 
-  describe("fast-check roundtrip tests", () => {
-    it("should generate executable code for arbitrary JSON values", async () => {
-      const jsonValue = fc.oneof(
-        fc.string(),
-        fc.integer(),
-        fc.float().filter((n) => isFinite(n)),
-        fc.boolean(),
-        fc.constant(null),
-        fc.constant(undefined),
-      );
-
-      await fc.assert(
-        fc.asyncProperty(jsonValue, async (value) => {
-          if (value === undefined) return;
-          const result = await jsonToJavascript(value, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
-            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          const normalizedValue = normalizeForComparison(value);
-          const normalizedResult = normalizeForComparison(parsedResult);
-          expect(normalizedResult).toEqual(normalizedValue);
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
+  describe("escaping issues", () => {
+    it.skip("legacy crash reproduction (pre-consolidation)", async () => {
+      const input =
+        "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
+      const result = await convert(input);
+      expect(result.needsDedent).toBe(true);
     });
-
-    it("should generate executable code for arbitrary JSON objects", async () => {
-      const jsonObject = fc.dictionary(
-        fc.string(),
-        fc.oneof(
-          fc.string(),
-          fc.integer(),
-          fc.float().filter((n) => isFinite(n)),
-          fc.boolean(),
-          fc.constant(null),
-        ),
-      );
-
-      await fc.assert(
-        fc.asyncProperty(jsonObject, async (input) => {
-          const result = await jsonToJavascript(input, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
-            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          const normalizedInput = normalizeForComparison(input);
-          const normalizedResult = normalizeForComparison(parsedResult);
-          expect(normalizedResult).toEqual(normalizedInput);
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
+    it("multiline with backticks excluded under heuristic", async () => {
+      const input =
+        "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
+      const result = await convert(input);
+      expect(result.needsDedent).toBe(false);
+      const { evalResult } = await roundTripTest(input).catch(() => ({
+        evalResult: "crashed",
+      }));
+      expect(evalResult.trim()).toBe(input.trim());
     });
-
-    it("should generate executable code for arbitrary JSON arrays", async () => {
-      const jsonArray = fc.array(
-        fc.oneof(
-          fc.string(),
-          fc.integer(),
-          fc.float().filter((n) => isFinite(n)),
-          fc.boolean(),
-          fc.constant(null),
-        ),
-        { maxLength: 10 },
-      );
-
-      await fc.assert(
-        fc.asyncProperty(jsonArray, async (input) => {
-          const result = await jsonToJavascript(input, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
-            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          const normalizedInput = normalizeForComparison(input);
-          const normalizedResult = normalizeForComparison(parsedResult);
-          expect(normalizedResult).toEqual(normalizedInput);
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
-    });
-
-    it("should generate executable code for nested structures", async () => {
-      const jsonValue = fc.letrec((tie) => ({
-        value: fc.oneof(
-          { weight: 1, arbitrary: fc.string() },
-          { weight: 1, arbitrary: fc.integer() },
-          { weight: 1, arbitrary: fc.float().filter((n) => isFinite(n)) },
-          { weight: 1, arbitrary: fc.boolean() },
-          { weight: 1, arbitrary: fc.constant(null) },
-          { weight: 2, arbitrary: fc.dictionary(fc.string(), tie("value")!) },
-          { weight: 2, arbitrary: fc.array(tie("value")!, { maxLength: 5 }) },
-        ),
-      })).value;
-
-      await fc.assert(
-        fc.asyncProperty(jsonValue, async (input) => {
-          const result = await jsonToJavascript(input, {
-            useDedent: true,
-            prefix: "const obj = (",
-            suffix: ")",
-          });
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`
-            : `${result.code}\nconsole.log(JSON.stringify(obj))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          const normalizedOriginal = normalizeForComparison(input);
-          const normalizedResult = normalizeForComparison(parsedResult);
-          expect(normalizedResult).toEqual(normalizedOriginal);
-        }),
-        { numRuns: 10 * FC_FACTOR },
-      );
-    });
-
-    it("should generate executable code with default convert function", async () => {
-      const jsonValue = fc.oneof(
-        fc.string(),
-        fc.integer(),
-        fc.float().filter((n) => isFinite(n)),
-        fc.boolean(),
-        fc.constant(null),
-        fc.dictionary(
-          fc.string(),
-          fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
-        ),
-        fc.array(
-          fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
-          { maxLength: 5 },
-        ),
-      );
-
-      await fc.assert(
-        fc.asyncProperty(jsonValue, async (input) => {
-          const result = await convert(input);
-          const evalCode = result.needsDedent
-            ? `const dedent = require("dedent");
-${result.code}
-console.log(JSON.stringify(x()))`
-            : `${result.code}
-console.log(JSON.stringify(x()))`;
-          const evalResult = await myEval(evalCode);
-          const parsedResult = JSON.parse(evalResult.trim());
-          const normalizedOriginal = normalizeForComparison(input);
-          const normalizedResult = normalizeForComparison(parsedResult);
-          expect(normalizedResult).toEqual(normalizedOriginal);
-        }),
-        // Reduced iterations for broad default convert property to mitigate timeout risk
-        { numRuns: 5 * FC_FACTOR },
-      );
+    it("regression: newline + double dollars excluded", async () => {
+      const input = "\n$$"; // contains dollars -> excluded
+      const { evalResult } = await roundTripTest(input);
+      expect(evalResult.trim()).toBe(input.trim());
     });
   });
 });
 
-describe("escaping issues", () => {
-  it.skip("legacy crash reproduction (pre-consolidation)", async () => {
-    // Kept skipped as documentation; under unified heuristic this round-trips.
-    const input =
-      "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
-    const result = await convert(input);
-    expect(result.needsDedent).toBe(true);
+describe("fast-check roundtrip tests", () => {
+  it("should generate executable code for arbitrary JSON values", async () => {
+    const jsonValue = fc.oneof(
+      fc.string(),
+      fc.integer(),
+      fc.float().filter((n) => isFinite(n)),
+      fc.boolean(),
+      fc.constant(null),
+      fc.constant(undefined),
+    );
+
+    await fc.assert(
+      fc.asyncProperty(jsonValue, async (value) => {
+        if (value === undefined) return;
+        const result = await jsonToJavascript(value, {
+          useDedent: true,
+          prefix: "const obj = (",
+          suffix: ")",
+        });
+        const evalCode = result.needsDedent
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+        const normalizedValue = normalizeForComparison(value);
+        const normalizedResult = normalizeForComparison(parsedResult);
+        expect(normalizedResult).toEqual(normalizedValue);
+      }),
+      { numRuns: 10 * FC_FACTOR },
+    );
   });
-  it("multiline with backticks excluded under conservative heuristic", async () => {
-    const input =
-      "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
-    const result = await convert(input);
-    expect(result.needsDedent).toBe(false);
-    const { evalResult } = await roundTripTest(input).catch(() => ({
-      evalResult: "crashed",
-    }));
-    expect(evalResult.trim()).toBe(input.trim());
+
+  it("should generate executable code for arbitrary JSON objects", async () => {
+    const jsonObject = fc.dictionary(
+      fc.string(),
+      fc.oneof(
+        fc.string(),
+        fc.integer(),
+        fc.float().filter((n) => isFinite(n)),
+        fc.boolean(),
+        fc.constant(null),
+      ),
+    );
+
+    await fc.assert(
+      fc.asyncProperty(jsonObject, async (input) => {
+        const result = await jsonToJavascript(input, {
+          useDedent: true,
+          prefix: "const obj = (",
+          suffix: ")",
+        });
+        const evalCode = result.needsDedent
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+        const normalizedInput = normalizeForComparison(input);
+        const normalizedResult = normalizeForComparison(parsedResult);
+        expect(normalizedResult).toEqual(normalizedInput);
+      }),
+      { numRuns: 10 * FC_FACTOR },
+    );
   });
-  it(
-    "debug flag allows multiline with backticks",
-    withBackticksAllowed(async () => {
-      const input =
-        "const commentBody = `string with ticks in it `git rebase -i`\nlast line`\n";
-      const result = await convert(input);
-      expect(result.needsDedent).toBe(true);
-      // shouldConvertMultiline should return true under debug flag
-      expect(shouldConvertMultiline(input, {})).toBe(true);
-      const { evalResult, result: roundResult } = await roundTripTest(input);
-      expect(roundResult.needsDedent).toBe(true);
-      expect(evalResult.trim()).toBe(input.trim());
-    }),
-  );
-  it("regression: newline + double dollars", async () => {
-    const input = "\n$$";
-    const { evalResult } = await roundTripTest(input);
-    expect(evalResult.trim()).toBe(input.trim());
+
+  it("should generate executable code for arbitrary JSON arrays", async () => {
+    const jsonArray = fc.array(
+      fc.oneof(
+        fc.string(),
+        fc.integer(),
+        fc.float().filter((n) => isFinite(n)),
+        fc.boolean(),
+        fc.constant(null),
+      ),
+      { maxLength: 10 },
+    );
+
+    await fc.assert(
+      fc.asyncProperty(jsonArray, async (input) => {
+        const result = await jsonToJavascript(input, {
+          useDedent: true,
+          prefix: "const obj = (",
+          suffix: ")",
+        });
+        const evalCode = result.needsDedent
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+        const normalizedInput = normalizeForComparison(input);
+        const normalizedResult = normalizeForComparison(parsedResult);
+        expect(normalizedResult).toEqual(normalizedInput);
+      }),
+      { numRuns: 10 * FC_FACTOR },
+    );
+  });
+
+  it("should generate executable code for nested structures", async () => {
+    const jsonValue = fc.letrec((tie) => ({
+      value: fc.oneof(
+        { weight: 1, arbitrary: fc.string() },
+        { weight: 1, arbitrary: fc.integer() },
+        { weight: 1, arbitrary: fc.float().filter((n) => isFinite(n)) },
+        { weight: 1, arbitrary: fc.boolean() },
+        { weight: 1, arbitrary: fc.constant(null) },
+        { weight: 2, arbitrary: fc.dictionary(fc.string(), tie("value")!) },
+        { weight: 2, arbitrary: fc.array(tie("value")!, { maxLength: 5 }) },
+      ),
+    })).value;
+
+    await fc.assert(
+      fc.asyncProperty(jsonValue, async (input) => {
+        const result = await jsonToJavascript(input, {
+          useDedent: true,
+          prefix: "const obj = (",
+          suffix: ")",
+        });
+        const evalCode = result.needsDedent
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(obj))`
+          : `${result.code}\nconsole.log(JSON.stringify(obj))`;
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+        const normalizedOriginal = normalizeForComparison(input);
+        const normalizedResult = normalizeForComparison(parsedResult);
+        expect(normalizedResult).toEqual(normalizedOriginal);
+      }),
+      { numRuns: 10 * FC_FACTOR },
+    );
+  });
+
+  it("should generate executable code with default convert function", async () => {
+    const jsonValue = fc.oneof(
+      fc.string(),
+      fc.integer(),
+      fc.float().filter((n) => isFinite(n)),
+      fc.boolean(),
+      fc.constant(null),
+      fc.dictionary(
+        fc.string(),
+        fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+      ),
+      fc.array(
+        fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null)),
+        { maxLength: 5 },
+      ),
+    );
+
+    await fc.assert(
+      fc.asyncProperty(jsonValue, async (input) => {
+        const result = await convert(input);
+        const evalCode = result.needsDedent
+          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(x()))`
+          : `${result.code}\nconsole.log(JSON.stringify(x()))`;
+        const evalResult = await myEval(evalCode);
+        const parsedResult = JSON.parse(evalResult.trim());
+        const normalizedOriginal = normalizeForComparison(input);
+        const normalizedResult = normalizeForComparison(parsedResult);
+        expect(normalizedResult).toEqual(normalizedOriginal);
+      }),
+      // Reduced iterations for broad default convert property to mitigate timeout risk
+      { numRuns: 5 * FC_FACTOR },
+    );
   });
 });
 
 const myEval = async (code: string) => {
-  // Write code to a workspace temp file to avoid shell interpolation and keep node cwd for module resolution
-  const tmpFileName = `./playpen/tmp-node-eval/node_eval_${Date.now()}_${Math.random().toString(36).slice(2)}.cjs`;
+  const tmpFileName = `./playpen/tmp-node-eval/node_eval_${Date.now()}_${Math.random()
+    .toString(36)
+    .slice(2)}.cjs`;
   await Bun.write(tmpFileName, code);
   const out = await $`node ${tmpFileName}`.text();
   await $`rm -f ${tmpFileName}`;
