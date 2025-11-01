@@ -125,8 +125,6 @@ export interface JavascriptOutput {
 }
 
 export function shouldConvertMultiline(value: string): boolean {
-  // Convert any string with \n to template literal. We'll specially handle \r
-  // by emitting it via expressions so it round-trips correctly.
   return value.includes("\n");
 }
 
@@ -186,8 +184,6 @@ export async function jsonToJavascript(
   formatted = options.beforePrettier
     ? options.beforePrettier(formatted)
     : formatted;
-  // Format with prettier BEFORE replacement to get correct indentation
-  // Then format again AFTER replacement to finalize template literals
   if (usePrettier && markerCount > 0) {
     try {
       formatted = await format(formatted, {
@@ -205,8 +201,6 @@ export async function jsonToJavascript(
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
     const original = multilineStrings[index]!;
-    // Build content by splitting on backslashes and using expressions for them
-    // Text chunks still need escaping for backticks and template syntax
     const parts: string[] = [];
     let textBuffer = "";
     for (let i = 0; i < original.length; i++) {
@@ -221,7 +215,6 @@ export async function jsonToJavascript(
           parts.push(escapedText);
           textBuffer = "";
         }
-        // Insert a backslash via expression to preserve it exactly
         parts.push('${"\\\\"}');
       } else if (ch === "\r") {
         if (textBuffer) {
@@ -233,7 +226,6 @@ export async function jsonToJavascript(
           parts.push(escapedText);
           textBuffer = "";
         }
-        // Emit carriage return via expression to avoid template literal CRLF normalization
         parts.push('${"\\r"}');
       } else {
         textBuffer += ch;
@@ -250,26 +242,21 @@ export async function jsonToJavascript(
     const composed = parts.join("");
     const marker = randomString + index;
     const quotedMarker = `"${marker}"`;
-    // Find the marker in the unformatted JSON string
     if (!formatted.includes(quotedMarker)) {
       throw new Error(`Marker ${quotedMarker} not found in code`);
     }
-    // Find the line containing the marker to get indentation
     const line = formatted.split("\n").find((line) => line.includes(marker));
     const indent = line?.match(/^(\s*)/)?.[1] || "";
-    // Indent all lines including the first one
     const contentIndent = indent + "  ";
     const indented =
       contentIndent + composed.replaceAll("\n", "\n" + contentIndent);
     const linesExpression = [
       dedentPrefix + "`",
       indented,
-      contentIndent + "`" + dedentSuffix, // Closing backtick should have same indent as content
+      contentIndent + "`" + dedentSuffix,
     ].join("\n");
-    // Use function replacer to avoid $-sequence semantics in String.replace
     formatted = formatted.replace(quotedMarker, () => linesExpression);
   }
-  // Format with prettier after all replacements are done
   if (usePrettier) {
     try {
       formatted = await format(formatted, {
