@@ -1,0 +1,199 @@
+samples:
+  # 1. Plain multiline (safe)
+  plain_safe: "Line one\nLine two\nLine three"
+
+  # 2. Contains backtick (risky: template literal conflict)
+  with_backtick: "First line with `tick`\nSecond line"
+
+  # 3. Contains dollar sign (risky: potential interpolation confusion)
+  with_dollar: "Amount: $123\nBreakdown: $45 + $78"
+
+  # 3a. Contains double dollar signs (GitHub Actions escape: $$ becomes $)
+  with_double_dollar: "Literal dollar: $$\nAmount: $$100\nMultiple: $$$$200"
+
+  # 4. Contains backslash sequences (risky: escape ambiguity)
+  with_backslash: "C:\\Program Files\\App\nNext line\\ending"
+
+  # 5. Mixed risky characters
+  mixed_risky: "`Code` $var \\path\nSecond ${line} here"
+
+  # 6. Trailing spaces (should preserve vs trim decision)
+  trailing_spaces: "Line A  \nLine B   \n  Line C    "
+
+  # 7. Leading blank lines and internal blank lines
+  leading_and_blank: "\n\nAlpha\n\nBeta\n\n\nGamma\n"
+
+  # 8. Emoji and non-BMP chars
+  emoji_unicode: "Status: ✅\nRocket: 🚀\nFaces: 😀😃😄"
+
+  # 9. CRLF newlines (simulated) - note: YAML loader may normalize; keep for raw source tests
+  crlf_variant: "Line1\r\nLine2\r\nLine3"
+
+  # 10. Escaped newlines vs real newlines
+  escaped_vs_real: "Real line 1\nReal line 2\\nEscaped newline sequence literal\\nAnother line"
+
+  # 11. Deep indentation sensitivity (block literal)
+  deep_indent_literal: |
+    function someCode() {
+        if (test) {
+            console.log("indented block");
+        }
+    }
+
+  # 12. Deep indentation folded
+  deep_indent_folded: >
+    function someCode() {
+        if (test) {
+            console.log("indented block");
+        }
+    }
+
+  # 13. GitHub expression examples (should maybe remain plain)
+  github_expression_step: |
+    echo "::set-output name=tag::${GITHUB_REF##*/}" # risky due to ${}
+    echo "Branch is ${GITHUB_REF}"
+
+  github_expression_inline: "First ${GITHUB_REF} second ${GITHUB_SHA}\nThird line"
+
+  # 14. Heredoc-like script (bash) with EOF markers inside
+  heredoc_script: |
+    cat <<'EOF'
+    line with $DOLLAR and `backtick` and \ backslash
+    second line
+    EOF
+
+  # 15. Script with fenced code block markers
+  fenced_code_block: |
+    ```bash
+    echo "Hello $USER" # inside code fence
+    echo `date`
+    ```
+
+  # 16. Mixed Markdown markup
+  mixed_markup: |
+    ### Heading Level 3
+    Paragraph with *italic* and **bold** and `$inline` code.
+    List:
+    - Item 1
+    - Item 2 with `tick` and $amount
+
+  # 17. Block literal containing trailing spaces and tabs
+  block_with_trailing_ws: |
+    line with two spaces  
+    line with tab	
+    line with mix
+
+  # 18. Folded block that ends with blank line (space significance?)
+  folded_ending_blank: >
+    This is a folded line
+    followed by another
+
+  # 19. Literal block starting with blank line
+  literal_start_blank: |
+
+    Indented after blank
+    Second line
+
+  # 20. Potential interpolation pattern but no risky chars (safe?)
+  looks_like_template: "${notActually} plain text\nAnother line"
+
+  # 21. JSON-ish content
+  json_like: |
+    {
+      "name": "Example",
+      "value": "Some $value with `tick` and \\backslash"
+    }
+
+  # 22. YAML map within block literal (nested structure)
+  yaml_in_yaml: |
+    key: value
+    other: $money
+    note: `inline`
+
+  # 23. Lines ending with backslash continuation style
+  backslash_continuations: |
+    echo "first line" \
+    echo "second line" \
+    echo "third line"
+
+  # 24. Multiline with varying indentation per line
+  varying_indent: |
+    no indent
+      two spaces
+        four spaces
+          six spaces
+
+  # 25. Empty multiline (just newlines)
+  empty_multiline: "\n\n\n"
+
+  stale-pr-message: >
+    No PR activity in 30 days.
+
+  run: |
+    curl -L \
+    -X POST \
+    -H "Accept: application/vnd.github+json" \
+    -H "Authorization: Bearer ${{ secrets.GHA_PAT }}" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    -d '{"labels":["stale"]}'
+
+  # 26. Escaped backticks inside content (should be convertible)
+  escaped_backticks_code: |
+    const commentBody = `string with ticks in it \`git rebase -i\`\nlast line`\n    echo "Done"
+
+  script: |
+    const body = `
+      Commit: ${process.env.COMMIT_SHA}
+      Run: ${github.run_id}
+      Tip: use \`git rebase -i\` to adjust commits.
+      Review changes or ignore.
+    `;
+    console.log(body);
+
+meta:
+  description: "Synthetic cases for classifier evolution"
+  version: 1
+
+messages:
+  simple: "Hello World"
+  multiline_plain: "Line1\nLine2\nLine3"
+  multiline_with_backtick: "Here is a `code` sample\nSecond line"
+  multiline_with_dollar: "Total is $100\nBreakdown line"
+  multiline_with_backslash: "Path C:\\Program Files\\App\nNext line"
+
+  # Block scalar with literal style (preserves newlines)
+  block_literal: |
+    First block line
+    Second block line with $
+    Third block line with `backtick`
+    Fourth line with a backslash \
+
+  # Block scalar with folded style (joins lines with spaces, except empty)
+  block_folded: >
+    Folded text first line
+    second line with backslash \
+    third line containing $
+    final line with `tick`
+
+nested:
+  level1:
+    level2:
+      multiline: |
+        Alpha
+        Beta
+        Gamma with $ and ` and \
+
+# Array examples
+list_examples:
+  - "Single line"
+  - "Line A\nLine B"
+  - |
+    Block item line 1
+    Block item line 2 with $
+    Block item line 3 with \
+  - >
+    Folded item first
+    folded item second with `
+    folded item third
+
+# End of fixture
