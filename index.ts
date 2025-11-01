@@ -266,9 +266,8 @@ export async function jsonToJavascript(
       indented,
       contentIndent + "`" + dedentSuffix, // Closing backtick should have same indent as content
     ].join("\n");
-    // Escape $ in replacement string to avoid special replacement patterns like $& or $1
-    const safeReplacement = linesExpression.replace(/\$/g, "$$$$");
-    formatted = formatted.replace(quotedMarker, safeReplacement);
+    // Use function replacer to avoid $-sequence semantics in String.replace
+    formatted = formatted.replace(quotedMarker, () => linesExpression);
   }
   // Format with prettier after all replacements are done
   if (usePrettier) {
