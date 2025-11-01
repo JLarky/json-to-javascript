@@ -4,7 +4,6 @@ import {
   shouldConvertMultiline,
   type Options,
 } from "./index";
-import { $ } from "bun";
 import fc from "fast-check";
 import { myEval } from "./test-utils";
 
@@ -216,7 +215,7 @@ describe("jsonToJavascript", () => {
     const input = {
       unix: "line1\nline2",
       carriage: "line1\rline2",
-      windows: "line1\r\nline2", // CRLF strings are converted; CR is injected as ${"\\r"} to preserve CRLF
+      windows: "line1\r\nline2",
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
@@ -228,7 +227,7 @@ describe("jsonToJavascript", () => {
             line1
             line2
             \`,
-          carriage: \"line1\\rline2\",
+          carriage: "line1\\rline2",
           windows: dedent\`
             line1\${"\\r"}
             line2
@@ -352,7 +351,7 @@ describe("jsonToJavascript", () => {
       prefix: "const obj = (",
       suffix: ")",
     });
-    expect(result.needsDedent).toBe(true); // Now converts all strings with \n
+    expect(result.needsDedent).toBe(true);
     const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
     const evalResult = await myEval(evalCode);
     const parsedResult = JSON.parse(evalResult.trim());
@@ -382,7 +381,7 @@ describe("jsonToJavascript", () => {
       prefix: "const obj = (",
       suffix: ")",
     });
-    expect(result.needsDedent).toBe(true); // Now converts all strings with \n
+    expect(result.needsDedent).toBe(true);
     const evalCode = `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(obj))`;
     const evalResult = await myEval(evalCode);
     const parsedResult = JSON.parse(evalResult.trim());
@@ -397,8 +396,8 @@ describe("jsonToJavascript", () => {
       prefix: "const obj = (",
       suffix: ")",
     });
-    expect(result.needsDedent).toBe(true); // Now converts all strings with \n
-    expect(shouldConvertMultiline(specialString)).toBe(true); // Changed behavior
+    expect(result.needsDedent).toBe(true);
+    expect(shouldConvertMultiline(specialString)).toBe(true);
   });
 
   it("should exclude backslashes in various positions", async () => {
@@ -415,8 +414,8 @@ describe("jsonToJavascript", () => {
         prefix: "const obj = (",
         suffix: ")",
       });
-      expect(result.needsDedent).toBe(true); // Now converts all strings with \n
-      expect(shouldConvertMultiline(specialString)).toBe(true); // Changed behavior
+      expect(result.needsDedent).toBe(true);
+      expect(shouldConvertMultiline(specialString)).toBe(true);
     }
   });
 
@@ -444,16 +443,6 @@ describe("jsonToJavascript", () => {
     it("should handle random strings with special characters", async () => {
       await fc.assert(
         fc.asyncProperty(stringWithSpecialChars, async (randomStr) => {
-          // Filter out CRLF strings as they're excluded from conversion
-          if (randomStr.includes("\r")) return true;
-          // Filter out edge cases with backslashes that may not round-trip perfectly
-          // due to how trim() interacts with backslashes in template literals
-          if (randomStr.trimEnd().endsWith("\\") && randomStr.includes("\n"))
-            return true;
-          // Filter out edge case: backslash followed by newline followed by backtick
-          if (randomStr.includes("\\\n`")) return true;
-          // Filter out $& which may interfere with marker replacement
-          if (randomStr.includes("$&")) return true;
           const input = { text: randomStr };
           const result = await convert(input, {
             prefix: "const obj = (",
@@ -465,19 +454,12 @@ describe("jsonToJavascript", () => {
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
           if (result.needsDedent) {
-            // Use normalizeForDedent-like comparison for strings with newlines
-            const expected = randomStr.includes("\n")
-              ? randomStr.trim()
-              : randomStr;
-            const actual = parsedResult.text.includes("\n")
-              ? parsedResult.text.trim()
-              : parsedResult.text;
-            expect(actual).toBe(expected);
+            expect(parsedResult.text.trim()).toBe(randomStr.trim());
           } else {
             expect(parsedResult.text).toBe(randomStr);
           }
         }),
-        { numRuns: 5 * FC_FACTOR }, // Reduced runs to avoid edge cases we can't fix
+        { numRuns: 10 * FC_FACTOR },
       );
     });
 
@@ -488,13 +470,7 @@ describe("jsonToJavascript", () => {
           maxLength: 50,
         })
         .map((arr) => arr.join(""))
-        .filter(
-          (str) =>
-            str.includes("\n") &&
-            str.trim().length > 0 &&
-            !str.includes("\r") &&
-            !str.includes("$&"),
-        ); // Exclude CRLF and $& edge case
+        .filter((str) => str.includes("\n") && str.trim().length > 0);
 
       await fc.assert(
         fc.asyncProperty(stringWithNewlines, async (randomStr) => {
@@ -515,10 +491,7 @@ describe("jsonToJavascript", () => {
           const evalResult = await myEval(evalCode);
           const parsedResult = JSON.parse(evalResult.trim());
           if (conservativeShould) {
-            // Use normalizeForDedent-like comparison for strings with newlines
-            const expected = randomStr.trim();
-            const actual = parsedResult.text.trim();
-            expect(actual).toBe(expected);
+            expect(parsedResult.text.trim()).toBe(randomStr.trim());
           } else {
             expect(parsedResult.text).toBe(randomStr);
           }
@@ -539,21 +512,11 @@ describe("jsonToJavascript", () => {
       const input =
         "const commentBody = `string with ticks in it \\`git rebase -i\\`\nlast line`\n";
       const result = await convert(input);
-      expect(result.needsDedent).toBe(true); // Now converts all strings with \n
+      expect(result.needsDedent).toBe(true);
       const { evalResult } = await roundTripTest(input).catch(() => ({
         evalResult: "crashed",
       }));
-      // After round-trip through template literal, verify it round-trips correctly
-      // Note: Edge case with backslashes before backticks may have minor representation differences
-      // but the functional value is preserved
-      const expected = input.trim();
-      const actual = evalResult.trim();
-      // For this edge case, verify the string can be re-converted and produces valid code
-      const reResult = await convert(actual);
-      expect(reResult.needsDedent).toBe(true);
-      // The core content should match (ignoring exact backslash representation differences)
-      expect(actual.replace(/\\+/g, "\\")).toContain("git rebase -i");
-      expect(actual).toContain("last line");
+      expect(evalResult.trim()).toBe(input.trim());
     });
     it("regression: newline + double dollars excluded", async () => {
       const input = "\n$$"; // contains dollars -> excluded
@@ -713,7 +676,7 @@ describe("fast-check roundtrip tests", () => {
       fc.asyncProperty(jsonValue, async (input) => {
         const result = await convert(input);
         const evalCode = result.needsDedent
-          ? `const dedent = require(\"dedent\");\n${result.code}\nconsole.log(JSON.stringify(x()))`
+          ? `const dedent = require("dedent");\n${result.code}\nconsole.log(JSON.stringify(x()))`
           : `${result.code}\nconsole.log(JSON.stringify(x()))`;
         const evalResult = await myEval(evalCode);
         const parsedResult = JSON.parse(evalResult.trim());

@@ -53,7 +53,7 @@ describe("baseline roundtrip (phase1)", () => {
           normalizeForDedent(normalize(value)),
         );
       }),
-      { numRuns: 5 * FC_FACTOR, timeout: 10000 }, // Reduce runs and increase timeout
+      { numRuns: 10 * FC_FACTOR },
     );
   });
 });
