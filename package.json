@@ -6,7 +6,7 @@
     "json-to-javascript": "./cli.ts"
   },
   "devDependencies": {
-    "@jlarky/gha-ts": "^0.1.4",
+    "@jlarky/gha-ts": "^0.1.7",
     "@types/bun": "latest",
     "dedent": "^1.7.0",
     "fast-check": "^4.3.0",

@@ -178,7 +178,9 @@ describe("jsonToJavascript", () => {
       }
       `);
     expect(evalResult).toMatchInlineSnapshot(`
-      "{ text: 'x \\n\\nx' }
+      "{
+        text: "x \\n\\nx",
+      }
       "
       `);
   });
@@ -206,7 +208,9 @@ describe("jsonToJavascript", () => {
       }
       `);
     expect(evalResult).toMatchInlineSnapshot(`
-      "{ text: 'x \\n  \\n   x\\n' }
+      "{
+        text: "\\n\\n x \\n\\n x \\n\\n",
+      }
       "
       `);
   });
@@ -725,7 +729,7 @@ async function roundTripTestLines(input: unknown) {
     suffix: ")",
   });
   const evalResult = await myEval(`
-        const { lines } = require("@jlarky/gha-ts/utils");
+        const { lines } = require("../../index.ts");
         ${result.code}
       `);
   return { evalResult, result };

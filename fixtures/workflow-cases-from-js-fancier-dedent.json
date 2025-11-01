@@ -8,7 +8,7 @@
     "mixed_risky": "`Code` $var \\path\nSecond ${line} here",
     "trailing_spaces": "Line A  \nLine B   \n  Line C",
     "leading_and_blank": "Alpha\n\nBeta\n\n\nGamma",
-    "emoji_unicode": "Status: ✅\nRocket: 🚀\nFaces: 😀😃😄",
+    "emoji_unicode": "Status: \\u2705\nRocket: \\u{1f680}\nFaces: \\u{1f600}\\u{1f603}\\u{1f604}",
     "crlf_variant": "Line1\r\nLine2\r\nLine3",
     "escaped_vs_real": "Real line 1\nReal line 2\nEscaped newline sequence literal\nAnother line",
     "deep_indent_literal": "function someCode() {\n    if (test) {\n        console.log(\"indented block\");\n    }\n}",

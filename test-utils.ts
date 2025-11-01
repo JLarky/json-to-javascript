@@ -5,7 +5,7 @@ export const myEval = async (code: string) => {
     .toString(36)
     .slice(2)}.cjs`;
   await Bun.write(tmpFileName, code);
-  const out = await $`node ${tmpFileName}`.text();
+  const out = await $`bun ${tmpFileName}`.text();
   await $`rm -f ${tmpFileName}`;
   return out;
 };

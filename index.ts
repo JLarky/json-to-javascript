@@ -23,6 +23,8 @@
 
 import { format, type Options as PrettierOptions } from "prettier";
 
+export { lines } from "@jlarky/gha-ts/utils";
+
 // it's random, I swear
 let randomString = "MARKER_b67575ae-db24-47f3-9c7d-e8b46b84228b_";
 
