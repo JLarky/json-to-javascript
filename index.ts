@@ -125,12 +125,7 @@ export interface JavascriptOutput {
 }
 
 export function shouldConvertMultiline(value: string): boolean {
-  return (
-    value.includes("\n") &&
-    !value.includes("`") &&
-    !value.includes("\\") &&
-    !value.includes("$")
-  );
+  return value.includes("\n");
 }
 
 /**
@@ -189,7 +184,7 @@ export async function jsonToJavascript(
   formatted = options.beforePrettier
     ? options.beforePrettier(formatted)
     : formatted;
-  if (usePrettier) {
+  if (usePrettier && markerCount > 0) {
     try {
       formatted = await format(formatted, {
         parser: "babel",
@@ -205,20 +200,75 @@ export async function jsonToJavascript(
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
-    const escaped = multilineStrings[index]!.replaceAll("`", "\\`").replaceAll(
-      "${",
-      "\\${",
-    );
+    const original = multilineStrings[index]!;
+    const parts: string[] = [];
+    let textBuffer = "";
+    for (let i = 0; i < original.length; i++) {
+      const ch = original[i]!;
+      if (ch === "\\") {
+        if (textBuffer) {
+          const escapedText = textBuffer
+            .replaceAll("`", "\\`")
+            .replaceAll("${", "__TEMP_TEMPLATE_START__")
+            .replaceAll("$", "\\$")
+            .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+          parts.push(escapedText);
+          textBuffer = "";
+        }
+        parts.push('${"\\\\"}');
+      } else if (ch === "\r") {
+        if (textBuffer) {
+          const escapedText = textBuffer
+            .replaceAll("`", "\\`")
+            .replaceAll("${", "__TEMP_TEMPLATE_START__")
+            .replaceAll("$", "\\$")
+            .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+          parts.push(escapedText);
+          textBuffer = "";
+        }
+        parts.push('${"\\r"}');
+      } else {
+        textBuffer += ch;
+      }
+    }
+    if (textBuffer) {
+      const escapedText = textBuffer
+        .replaceAll("`", "\\`")
+        .replaceAll("${", "__TEMP_TEMPLATE_START__")
+        .replaceAll("$", "\\$")
+        .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+      parts.push(escapedText);
+    }
+    const composed = parts.join("");
     const marker = randomString + index;
+    const quotedMarker = `"${marker}"`;
+    if (!formatted.includes(quotedMarker)) {
+      throw new Error(`Marker ${quotedMarker} not found in code`);
+    }
     const line = formatted.split("\n").find((line) => line.includes(marker));
     const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", `\n${indent}  `);
+    const contentIndent = indent + "  ";
+    const indented =
+      contentIndent + composed.replaceAll("\n", "\n" + contentIndent);
     const linesExpression = [
-      `${dedentPrefix}\``,
-      `${indent}  ${indented}`, //
-      `${indent}\`${dedentSuffix}`,
+      dedentPrefix + "`",
+      indented,
+      contentIndent + "`" + dedentSuffix,
     ].join("\n");
-    formatted = formatted.replace(`"${marker}"`, linesExpression);
+    formatted = formatted.replace(quotedMarker, () => linesExpression);
+  }
+  if (usePrettier) {
+    try {
+      formatted = await format(formatted, {
+        parser: "babel",
+        ...options.prettierOptions,
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to format code with prettier, consider turning off prettier with --usePrettier false`,
+        { cause: error },
+      );
+    }
   }
   return {
     code: formatted,

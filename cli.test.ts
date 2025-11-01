@@ -37,10 +37,13 @@ describe("cli", () => {
     const output = await Bun.file(outputFile).text();
     expect(output).toMatchInlineSnapshot(`
       "import dedent from "dedent";
-      const x = { name:  dedent\`
+      const x = {
+        name: dedent\`
         John
         Doe
-      \`, age: 30 };
+        \`,
+        age: 30,
+      };
       "
     `);
   });
