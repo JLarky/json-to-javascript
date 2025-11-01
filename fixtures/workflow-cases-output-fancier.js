@@ -13,29 +13,22 @@
     trailing_spaces:  dedent`
       Line A  
       Line B   
-        Line C    
-    `,
-    leading_and_blank:  dedent`
-      
-      
+        Line C
+    ` + "    ",
+    leading_and_blank: "\n\n" +  dedent`
       Alpha
       
       Beta
       
       
       Gamma
-      
-    `,
+    ` + "\n",
     emoji_unicode:  dedent`
       Status: ✅
       Rocket: 🚀
       Faces: 😀😃😄
     `,
-    crlf_variant:  dedent`
-      Line1
-      Line2
-      Line3
-    `,
+    crlf_variant: "Line1\r\nLine2\r\nLine3",
     escaped_vs_real:
       "Real line 1\nReal line 2\\nEscaped newline sequence literal\\nAnother line",
     deep_indent_literal:  dedent`
@@ -44,16 +37,14 @@
               console.log("indented block");
           }
       }
-      
-    `,
+    ` + "\n",
     deep_indent_folded:  dedent`
       function someCode() {
           if (test) {
               console.log("indented block");
           }
       }
-      
-    `,
+    ` + "\n",
     github_expression_step:
       'echo "::set-output name=tag::${GITHUB_REF##*/}" # risky due to ${}\necho "Branch is ${GITHUB_REF}"\n',
     github_expression_inline:
@@ -68,18 +59,14 @@
       line with two spaces  
       line with tab	
       line with mix
-      
-    `,
+    ` + "\n",
     folded_ending_blank:  dedent`
       This is a folded line followed by another
-      
-    `,
-    literal_start_blank:  dedent`
-      
+    ` + "\n",
+    literal_start_blank: "\n" +  dedent`
       Indented after blank
       Second line
-      
-    `,
+    ` + "\n",
     looks_like_template: "${notActually} plain text\nAnother line",
     json_like:
       '{\n  "name": "Example",\n  "value": "Some $value with `tick` and \\\\backslash"\n}\n',
@@ -91,18 +78,13 @@
         two spaces
           four spaces
             six spaces
-      
-    `,
-    empty_multiline:  dedent`
-      
-      
-      
+    ` + "\n",
+    empty_multiline: "\n\n\n" +  dedent`
       
     `,
     "stale-pr-message":  dedent`
       No PR activity in 30 days.
-      
-    `,
+    ` + "\n",
     run: 'curl -L \\\n-X POST \\\n-H "Accept: application/vnd.github+json" \\\n-H "Authorization: Bearer ${{ secrets.GHA_PAT }}" \\\n-H "X-GitHub-Api-Version: 2022-11-28" \\\n-d \'{"labels":["stale"]}\'\n',
     escaped_backticks_code:
       'const commentBody = `string with ticks in it \\`git rebase -i\\`\\nlast line`\\n    echo "Done"\n',

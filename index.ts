@@ -205,19 +205,73 @@ export async function jsonToJavascript(
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
-    const escaped = multilineStrings[index]!.replaceAll("`", "\\`").replaceAll(
-      "${",
-      "\\${",
-    );
+    const originalString = multilineStrings[index]!;
+    // Extract leading newlines
+    const leadingNewlinesMatch = originalString.match(/^(\r?\n)+/);
+    const leadingNewlines = leadingNewlinesMatch ? leadingNewlinesMatch[0] : "";
+    
+    // Extract trailing newlines and whitespace (spaces, tabs, etc.)
+    // But only if there's non-whitespace content between leading and trailing
+    const afterLeading = originalString.slice(leadingNewlines.length);
+    const trailingMatch = afterLeading.match(/([\s]+)$/);
+    // If trailing whitespace consumes everything after leading, and leading consumed everything,
+    // then this is an all-whitespace string - treat trailing as empty to avoid duplication
+    const isAllWhitespace = leadingNewlines.length > 0 && trailingMatch && trailingMatch[0].length === afterLeading.length;
+    const trailing = (trailingMatch && !isAllWhitespace) ? trailingMatch[0] : "";
+    
+    // Get the middle content (without leading/trailing)
+    const middleContent = originalString.slice(leadingNewlines.length, trailing ? -trailing.length : undefined);
+    
+    // Check if middle content contains \r\n sequences that need special handling
+    // (template literals normalize \r\n to \n, so we need to use string concatenation)
+    const hasCrlf = middleContent.includes("\r\n");
+    
+    // Escape for template literal
+    // Handle \r\n as a unit first, then escape standalone \r
+    let escaped = middleContent
+      .replaceAll("\\", "\\\\")
+      .replaceAll("`", "\\`")
+      .replaceAll("${", "\\${")
+      // Don't escape \r that's part of \r\n - we'll handle those specially
+      // Only escape standalone \r (not followed by \n)
+      .replaceAll(/\r(?!\n)/g, "\\r");
+    
     const marker = randomString + index;
     const line = formatted.split("\n").find((line) => line.includes(marker));
     const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", `\n${indent}  `);
-    const linesExpression = [
-      `${dedentPrefix}\``,
-      `${indent}  ${indented}`, //
-      `${indent}\`${dedentSuffix}`,
-    ].join("\n");
+    
+    // Build expression with leading newlines before dedent, trailing after
+    // Escape newlines and other special chars for string literal
+    const escapeForString = (str: string) => {
+      return str
+        .replaceAll("\\", "\\\\")
+        .replaceAll("\r", "\\r")
+        .replaceAll("\n", "\\n")
+        .replaceAll('"', '\\"')
+        .replaceAll("\t", "\\t");
+    };
+    const leadingPart = leadingNewlines ? `"${escapeForString(leadingNewlines)}" + ` : "";
+    const trailingPart = trailing ? ` + "${escapeForString(trailing)}"` : "";
+    
+    let linesExpression: string;
+    if (hasCrlf) {
+      // For strings with \r\n, convert entire content to escaped string literal
+      // because template literals normalize \r\n to \n
+      // We'll preserve \r\n by using escaped string concatenation
+      const fullString = leadingNewlines + middleContent + (trailing || "");
+      const escapedFull = escapeForString(fullString);
+      linesExpression = `"${escapedFull}"`;
+    } else {
+      // Normal case: handle standalone \n first (not preceded by \r), then handle \r\n as a unit
+      const indented = escaped
+        .replaceAll(/(?<!\r)\n/g, `\n${indent}  `)
+        .replaceAll(/\r\n/g, `\r\n${indent}  `);
+      linesExpression = [
+        `${leadingPart}${dedentPrefix}\``,
+        `${indent}  ${indented}`,
+        `${indent}\`${dedentSuffix}${trailingPart}`,
+      ].join("\n");
+    }
     formatted = formatted.replace(`"${marker}"`, linesExpression);
   }
   return {
