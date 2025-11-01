@@ -31,11 +31,25 @@
 export function lines(script: string): string;
 export function lines(
   strings: TemplateStringsArray,
-  ...substitutions: never[]
+  ...substitutions: unknown[]
 ): string;
-export function lines(scriptOrStrings: string | TemplateStringsArray): string {
-  const strInput =
-    typeof scriptOrStrings === "string" ? scriptOrStrings : scriptOrStrings[0];
+export function lines(
+  scriptOrStrings: string | TemplateStringsArray,
+  ...substitutions: unknown[]
+): string {
+  let strInput: string;
+  if (typeof scriptOrStrings === "string") {
+    strInput = scriptOrStrings;
+  } else {
+    // Reconstruct the full string from template literal parts and substitutions
+    // Convert each substitution to string to preserve exact content
+    const parts: string[] = [scriptOrStrings[0] ?? ""];
+    for (let i = 0; i < substitutions.length; i++) {
+      parts.push(String(substitutions[i]));
+      parts.push(scriptOrStrings[i + 1] ?? "");
+    }
+    strInput = parts.join("");
+  }
 
   if (!strInput) {
     return strInput;

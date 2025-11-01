@@ -19,11 +19,11 @@
       Multiple: \$\$\$\$200
       `,
     with_backslash: dedent`
-      C:\\Program Files\\App
-      Next line\\ending
+      C:${"\\"}Program Files${"\\"}App
+      Next line${"\\"}ending
       `,
     mixed_risky: dedent`
-      \`Code\` \$var \\path
+      \`Code\` \$var ${"\\"}path
       Second \${line} here
       `,
     trailing_spaces: dedent`
@@ -50,7 +50,7 @@
     crlf_variant: "Line1\r\nLine2\r\nLine3",
     escaped_vs_real: dedent`
       Real line 1
-      Real line 2\\nEscaped newline sequence literal\\nAnother line
+      Real line 2${"\\"}nEscaped newline sequence literal${"\\"}nAnother line
       `,
     deep_indent_literal: dedent`
       function someCode() {
@@ -79,7 +79,7 @@
       `,
     heredoc_script: dedent`
       cat <<'EOF'
-      line with \$DOLLAR and \`backtick\` and \\ backslash
+      line with \$DOLLAR and \`backtick\` and ${"\\"} backslash
       second line
       EOF
       
@@ -122,7 +122,7 @@
     json_like: dedent`
       {
         "name": "Example",
-        "value": "Some \$value with \`tick\` and \\\\backslash"
+        "value": "Some \$value with \`tick\` and ${"\\"}${"\\"}backslash"
       }
       
       `,
@@ -133,8 +133,8 @@
       
       `,
     backslash_continuations: dedent`
-      echo "first line" \\
-      echo "second line" \\
+      echo "first line" ${"\\"}
+      echo "second line" ${"\\"}
       echo "third line"
       
       `,
@@ -156,23 +156,23 @@
       
       `,
     run: dedent`
-      curl -L \\
-      -X POST \\
-      -H "Accept: application/vnd.github+json" \\
-      -H "Authorization: Bearer \${{ secrets.GHA_PAT }}" \\
-      -H "X-GitHub-Api-Version: 2022-11-28" \\
+      curl -L ${"\\"}
+      -X POST ${"\\"}
+      -H "Accept: application/vnd.github+json" ${"\\"}
+      -H "Authorization: Bearer \${{ secrets.GHA_PAT }}" ${"\\"}
+      -H "X-GitHub-Api-Version: 2022-11-28" ${"\\"}
       -d '{"labels":["stale"]}'
       
       `,
     escaped_backticks_code: dedent`
-      const commentBody = \`string with ticks in it \\\`git rebase -i\\\`\\nlast line\`\\n    echo "Done"
+      const commentBody = \`string with ticks in it ${"\\"}\`git rebase -i${"\\"}\`${"\\"}nlast line\`${"\\"}n    echo "Done"
       
       `,
     script: dedent`
       const body = \`
         Commit: \${process.env.COMMIT_SHA}
         Run: \${github.run_id}
-        Tip: use \\\`git rebase -i\\\` to adjust commits.
+        Tip: use ${"\\"}\`git rebase -i${"\\"}\` to adjust commits.
         Review changes or ignore.
       \`;
       console.log(body);
@@ -196,18 +196,18 @@
       Breakdown line
       `,
     multiline_with_backslash: dedent`
-      Path C:\\Program Files\\App
+      Path C:${"\\"}Program Files${"\\"}App
       Next line
       `,
     block_literal: dedent`
       First block line
       Second block line with \$
       Third block line with \`backtick\`
-      Fourth line with a backslash \\
+      Fourth line with a backslash ${"\\"}
       
       `,
     block_folded: dedent`
-      Folded text first line second line with backslash \\ third line containing \$ final line with \`tick\`
+      Folded text first line second line with backslash ${"\\"} third line containing \$ final line with \`tick\`
       
       `,
   },
@@ -217,7 +217,7 @@
         multiline: dedent`
         Alpha
         Beta
-        Gamma with \$ and \` and \\
+        Gamma with \$ and \` and ${"\\"}
         
         `,
       },
@@ -232,7 +232,7 @@
     dedent`
       Block item line 1
       Block item line 2 with \$
-      Block item line 3 with \\
+      Block item line 3 with ${"\\"}
       
       `,
     dedent`

@@ -204,23 +204,38 @@ export async function jsonToJavascript(
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
-    let escaped = multilineStrings[index]!;
-    // Escape backticks and template expressions for template literals
-    // We need to escape backslashes that appear before backticks or dollar signs
-    // to ensure they're literal backslashes, not escape sequences
-    // Process character by character to handle backslash sequences correctly
-    // Escape for template literals:
-    // - Backslashes must be escaped to \\ to appear as literal backslashes
-    // - Backticks must be escaped to \`
-    // - ${ must be escaped to \${
-    // - $ must be escaped to \$ to preserve $$ (prettier may normalize $$ to $ otherwise)
-    // - Newlines and other escape sequences work as-is in template literals
-    escaped = escaped
-      .replaceAll("\\", "\\\\") // Escape all backslashes first
-      .replaceAll("`", "\\`") // Then escape backticks
-      .replaceAll("${", "__TEMP_TEMPLATE_START__") // Temporarily replace ${
-      .replaceAll("$", "\\$") // Escape all remaining $ to preserve $$
-      .replaceAll("__TEMP_TEMPLATE_START__", "\\${"); // Restore ${ as \${
+    const original = multilineStrings[index]!;
+    // Build content by splitting on backslashes and using expressions for them
+    // Text chunks still need escaping for backticks and template syntax
+    const parts: string[] = [];
+    let textBuffer = "";
+    for (let i = 0; i < original.length; i++) {
+      const ch = original[i]!;
+      if (ch === "\\") {
+        if (textBuffer) {
+          const escapedText = textBuffer
+            .replaceAll("`", "\\`")
+            .replaceAll("${", "__TEMP_TEMPLATE_START__")
+            .replaceAll("$", "\\$")
+            .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+          parts.push(escapedText);
+          textBuffer = "";
+        }
+        // Insert a backslash via expression to preserve it exactly
+        parts.push('${"\\\\"}');
+      } else {
+        textBuffer += ch;
+      }
+    }
+    if (textBuffer) {
+      const escapedText = textBuffer
+        .replaceAll("`", "\\`")
+        .replaceAll("${", "__TEMP_TEMPLATE_START__")
+        .replaceAll("$", "\\$")
+        .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+      parts.push(escapedText);
+    }
+    const composed = parts.join("");
     const marker = randomString + index;
     const quotedMarker = `"${marker}"`;
     // Find the marker in the unformatted JSON string
@@ -233,7 +248,7 @@ export async function jsonToJavascript(
     // Indent all lines including the first one
     const contentIndent = indent + "  ";
     const indented =
-      contentIndent + escaped.replaceAll("\n", "\n" + contentIndent);
+      contentIndent + composed.replaceAll("\n", "\n" + contentIndent);
     const linesExpression = [
       dedentPrefix + "`",
       indented,
