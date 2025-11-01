@@ -16,7 +16,23 @@ describe("fixture classification", () => {
       "const x =" + output.code + "console.log(JSON.stringify(x, null, 2))",
     );
     await Bun.write("./fixtures/workflow-cases-from-js.json", out);
+    const fancierOutput = await jsonToJavascript(doc, { useDedent: true });
+    await Bun.write(
+      "./fixtures/workflow-cases-output-fancier.js",
+      fancierOutput.code,
+    );
+    const fancierOut = await myEval(
+      'const dedent = require("dedent");\nconst x =' +
+        fancierOutput.code +
+        "console.log(JSON.stringify(x, null, 2))",
+    );
+    await Bun.write(
+      "./fixtures/workflow-cases-from-js-fancier.json",
+      fancierOut,
+    );
+
+    // expects
     expect(out.trimEnd()).toBe(jsonDoc);
-    // expect(stringify(doc)).toMatchSnapshot();
+    expect(fancierOut.trimEnd()).toBe(jsonDoc);
   });
 });
