@@ -221,7 +221,7 @@ export async function jsonToJavascript(
     const linesExpression = [
       dedentPrefix + "`",
       indent + "  " + indented,
-      indent + "`" + dedentSuffix,
+      indent + "  `" + dedentSuffix, // Closing backtick should have same indent as content
     ].join("\n");
     formatted = formatted.replace(quotedMarker, linesExpression);
   }
