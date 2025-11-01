@@ -1,5 +1,3 @@
 {
-  "setup-worktree": [
-    "mise run install"
-  ]
+  "setup-worktree": ["mise trust", "mise run install"]
 }

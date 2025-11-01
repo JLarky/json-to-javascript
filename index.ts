@@ -217,9 +217,9 @@ export async function jsonToJavascript(
     // - Newlines and other escape sequences work as-is in template literals
     escaped = escaped
       .replaceAll("\\", "\\\\") // Escape all backslashes first
-      .replaceAll("`", "\\`")   // Then escape backticks
-      .replaceAll("${", "__TEMP_TEMPLATE_START__")  // Temporarily replace ${
-      .replaceAll("$", "\\$")   // Escape all remaining $ to preserve $$
+      .replaceAll("`", "\\`") // Then escape backticks
+      .replaceAll("${", "__TEMP_TEMPLATE_START__") // Temporarily replace ${
+      .replaceAll("$", "\\$") // Escape all remaining $ to preserve $$
       .replaceAll("__TEMP_TEMPLATE_START__", "\\${"); // Restore ${ as \${
     const marker = randomString + index;
     const quotedMarker = `"${marker}"`;
@@ -232,7 +232,8 @@ export async function jsonToJavascript(
     const indent = line?.match(/^(\s*)/)?.[1] || "";
     // Indent all lines including the first one
     const contentIndent = indent + "  ";
-    const indented = contentIndent + escaped.replaceAll("\n", "\n" + contentIndent);
+    const indented =
+      contentIndent + escaped.replaceAll("\n", "\n" + contentIndent);
     const linesExpression = [
       dedentPrefix + "`",
       indented,
