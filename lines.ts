@@ -28,6 +28,8 @@
  * }
  * ```
  */
+import { lines as ghaLines } from "@jlarky/gha-ts/utils";
+
 export function lines(script: string): string;
 export function lines(
   strings: TemplateStringsArray,
@@ -49,54 +51,7 @@ export function lines(
     strInput = parts.join("");
   }
 
-  if (!strInput) {
-    return strInput;
-  }
-
-  let linesArray = strInput.split("\n");
-
-  if (linesArray.length > 0 && /^\s*$/.test(linesArray[0]!)) {
-    linesArray = linesArray.slice(1);
-  }
-
-  if (
-    linesArray.length > 0 &&
-    /^\s*$/.test(linesArray[linesArray.length - 1]!)
-  ) {
-    linesArray = linesArray.slice(0, -1);
-  }
-
-  if (linesArray.length === 0) {
-    return "";
-  }
-
-  let minIndent = Infinity;
-  let hasAnyIndentation = false;
-
-  for (let i = 0; i < linesArray.length; i++) {
-    const line = linesArray[i];
-    if (line) {
-      const leadingSpaces = line.match(/^( +)/)?.[1]?.length || 0;
-      if (leadingSpaces > 0) {
-        hasAnyIndentation = true;
-        if (leadingSpaces < minIndent) {
-          minIndent = leadingSpaces;
-        }
-      }
-    }
-  }
-
-  if (hasAnyIndentation && minIndent > 0 && minIndent !== Infinity) {
-    const indentPattern = new RegExp(`^ {${minIndent}}`);
-    return linesArray
-      .map((line) => {
-        if (line && line.length >= minIndent && /^ +/.test(line)) {
-          return line.replace(indentPattern, "");
-        }
-        return line;
-      })
-      .join("\n");
-  } else {
-    return linesArray.join("\n");
-  }
+  const result = ghaLines(strInput);
+  // Only remove trailing newlines, not trailing whitespace
+  return result.replace(/\n+$/, "");
 }

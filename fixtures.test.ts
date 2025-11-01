@@ -21,8 +21,9 @@ describe("fixture classification", () => {
       "./fixtures/workflow-cases-output-fancier.js",
       fancierOutput.code,
     );
+    const linesPath = require.resolve("./lines.ts");
     const fancierOut = await myEval(
-      'const {lines: dedent} = require("../../lines.ts");\nconst x =' +
+      `const {lines: dedent} = require(${JSON.stringify(linesPath)});\nconst x =` +
         fancierOutput.code +
         "console.log(JSON.stringify(x, null, 2))",
     );
