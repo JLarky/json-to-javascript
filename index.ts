@@ -22,6 +22,7 @@
  */
 
 import { format, type Options as PrettierOptions } from "prettier";
+import { debugAllowBackticks } from "./config";
 
 // it's random, I swear
 let randomString = "MARKER_b67575ae-db24-47f3-9c7d-e8b46b84228b_";
@@ -125,6 +126,28 @@ export interface JavascriptOutput {
 }
 
 /**
+ * Heuristic to determine if a multiline string should be converted into a template literal.
+ * Mirrors the expectations encoded in the test-suite (see index.test.ts).
+ *
+ * Rules (conservative):
+ *  - Must contain at least one newline.
+ *  - Excludes strings containing `$`.
+ *  - Excludes strings containing backticks unless debug flag JSON_TO_JS_DEBUG_ALLOW_BACKTICKS=1.
+ *  - Excludes any backslash sequence immediately followed by a newline ( /\\+\n/ ).
+ *  - Excludes trailing backslashes at end of string ( /\\+$/ ).
+ *  - Allows backslashes that are not directly before a newline and not the final character(s).
+ *  - Allows trailing backslash if followed by spaces (only plain /\\+$/ is excluded).
+ */
+export function shouldConvertMultiline(value: string, _options: {}): boolean {
+  if (!value.includes("\n")) return false;
+  if (value.includes("$")) return false;
+  if (value.includes("`") && !debugAllowBackticks()) return false;
+  if (/\\+\n/.test(value)) return false; // backslash(es) directly before newline
+  if (/\\+$/.test(value)) return false; // trailing backslashes
+  return true;
+}
+
+/**
  * Convert JSON data to JavaScript code literals.
  *
  * This function transforms JSON into properly formatted JavaScript code, with optional support
@@ -165,13 +188,7 @@ export async function jsonToJavascript(
     (key, value) => {
       let replacedValue = value;
       if (useDedent) {
-        if (
-          typeof value === "string" &&
-          value.includes("\n") &&
-          !value.includes("`") &&
-          !value.includes("\\") &&
-          !value.includes("$")
-        ) {
+        if (typeof value === "string" && shouldConvertMultiline(value, {})) {
           replacedValue = randomString + markerCount++;
           multilineStrings.push(value);
         }
