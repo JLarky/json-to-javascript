@@ -125,12 +125,9 @@ export interface JavascriptOutput {
 }
 
 export function shouldConvertMultiline(value: string): boolean {
-  return (
-    value.includes("\n") &&
-    !value.includes("`") &&
-    !value.includes("\\") &&
-    !value.includes("$")
-  );
+  // Convert any string with \n to template literal, but exclude CRLF strings
+  // because JavaScript template literals normalize \r\n to \n
+  return value.includes("\n") && !value.includes("\r");
 }
 
 /**
@@ -189,6 +186,46 @@ export async function jsonToJavascript(
   formatted = options.beforePrettier
     ? options.beforePrettier(formatted)
     : formatted;
+  // Don't format with prettier yet - we need to replace markers first
+  // Format after replacement to ensure template literals are formatted correctly
+  const dedentPrefix = options.dedentPrefix ?? " dedent";
+  const dedentSuffix = options.dedentSuffix ?? "";
+  for (let index = 0; index < markerCount; index++) {
+    let escaped = multilineStrings[index]!;
+    // Escape backticks and template expressions for template literals
+    // We need to escape backslashes that appear before backticks or dollar signs
+    // to ensure they're literal backslashes, not escape sequences
+    // Process character by character to handle backslash sequences correctly
+    // Escape for template literals:
+    // - Backslashes must be escaped to \\ to appear as literal backslashes
+    // - Backticks must be escaped to \`
+    // - ${ must be escaped to \${
+    // - $ must be escaped to \$ to preserve $$ (prettier may normalize $$ to $ otherwise)
+    // - Newlines and other escape sequences work as-is in template literals
+    escaped = escaped
+      .replaceAll("\\", "\\\\") // Escape all backslashes first
+      .replaceAll("`", "\\`")   // Then escape backticks
+      .replaceAll("${", "__TEMP_TEMPLATE_START__")  // Temporarily replace ${
+      .replaceAll("$", "\\$")   // Escape all remaining $ to preserve $$
+      .replaceAll("__TEMP_TEMPLATE_START__", "\\${"); // Restore ${ as \${
+    const marker = randomString + index;
+    const quotedMarker = `"${marker}"`;
+    // Find the marker in the unformatted JSON string
+    if (!formatted.includes(quotedMarker)) {
+      throw new Error(`Marker ${quotedMarker} not found in code`);
+    }
+    // Find the line containing the marker to get indentation
+    const line = formatted.split("\n").find((line) => line.includes(marker));
+    const indent = line?.match(/^(\s*)/)?.[1] || "";
+    const indented = escaped.replaceAll("\n", "\n" + indent + "  ");
+    const linesExpression = [
+      dedentPrefix + "`",
+      indent + "  " + indented,
+      indent + "`" + dedentSuffix,
+    ].join("\n");
+    formatted = formatted.replace(quotedMarker, linesExpression);
+  }
+  // Format with prettier after all replacements are done
   if (usePrettier) {
     try {
       formatted = await format(formatted, {
@@ -201,24 +238,6 @@ export async function jsonToJavascript(
         { cause: error },
       );
     }
-  }
-  const dedentPrefix = options.dedentPrefix ?? " dedent";
-  const dedentSuffix = options.dedentSuffix ?? "";
-  for (let index = 0; index < markerCount; index++) {
-    const escaped = multilineStrings[index]!.replaceAll("`", "\\`").replaceAll(
-      "${",
-      "\\${",
-    );
-    const marker = randomString + index;
-    const line = formatted.split("\n").find((line) => line.includes(marker));
-    const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", `\n${indent}  `);
-    const linesExpression = [
-      `${dedentPrefix}\``,
-      `${indent}  ${indented}`, //
-      `${indent}\`${dedentSuffix}`,
-    ].join("\n");
-    formatted = formatted.replace(`"${marker}"`, linesExpression);
   }
   return {
     code: formatted,
