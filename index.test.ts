@@ -216,7 +216,7 @@ describe("jsonToJavascript", () => {
     const input = {
       unix: "line1\nline2",
       carriage: "line1\rline2",
-      windows: "line1\r\nline2", // CRLF strings are excluded from conversion
+      windows: "line1\r\nline2", // CRLF strings are converted; CR is injected as ${"\\r"} to preserve CRLF
     };
     const result = await convert(input);
     expect(result.needsDedent).toBe(true);
@@ -228,8 +228,11 @@ describe("jsonToJavascript", () => {
             line1
             line2
             \`,
-          carriage: "line1\\rline2",
-          windows: "line1\\r\\nline2",
+          carriage: \"line1\\rline2\",
+          windows: dedent\`
+            line1\${"\\r"}
+            line2
+            \`,
         };
         return js;
       }

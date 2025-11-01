@@ -47,7 +47,11 @@
       Rocket: 🚀
       Faces: 😀😃😄
       `,
-    crlf_variant: "Line1\r\nLine2\r\nLine3",
+    crlf_variant: dedent`
+      Line1${"\r"}
+      Line2${"\r"}
+      Line3
+      `,
     escaped_vs_real: dedent`
       Real line 1
       Real line 2${"\\"}nEscaped newline sequence literal${"\\"}nAnother line

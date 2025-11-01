@@ -125,9 +125,9 @@ export interface JavascriptOutput {
 }
 
 export function shouldConvertMultiline(value: string): boolean {
-  // Convert any string with \n to template literal, but exclude CRLF strings
-  // because JavaScript template literals normalize \r\n to \n
-  return value.includes("\n") && !value.includes("\r");
+  // Convert any string with \n to template literal. We'll specially handle \r
+  // by emitting it via expressions so it round-trips correctly.
+  return value.includes("\n");
 }
 
 /**
@@ -223,6 +223,18 @@ export async function jsonToJavascript(
         }
         // Insert a backslash via expression to preserve it exactly
         parts.push('${"\\\\"}');
+      } else if (ch === "\r") {
+        if (textBuffer) {
+          const escapedText = textBuffer
+            .replaceAll("`", "\\`")
+            .replaceAll("${", "__TEMP_TEMPLATE_START__")
+            .replaceAll("$", "\\$")
+            .replaceAll("__TEMP_TEMPLATE_START__", "\\${");
+          parts.push(escapedText);
+          textBuffer = "";
+        }
+        // Emit carriage return via expression to avoid template literal CRLF normalization
+        parts.push('${"\\r"}');
       } else {
         textBuffer += ch;
       }
@@ -254,7 +266,9 @@ export async function jsonToJavascript(
       indented,
       contentIndent + "`" + dedentSuffix, // Closing backtick should have same indent as content
     ].join("\n");
-    formatted = formatted.replace(quotedMarker, linesExpression);
+    // Escape $ in replacement string to avoid special replacement patterns like $& or $1
+    const safeReplacement = linesExpression.replace(/\$/g, "$$$$");
+    formatted = formatted.replace(quotedMarker, safeReplacement);
   }
   // Format with prettier after all replacements are done
   if (usePrettier) {
