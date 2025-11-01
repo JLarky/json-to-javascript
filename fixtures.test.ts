@@ -30,6 +30,10 @@ describe("fixture classification", () => {
       "./fixtures/workflow-cases-from-js-fancier.json",
       fancierOut,
     );
+    await Bun.write(
+      "./fixtures/workflow-cases-from-js-fancier.yml",
+      stringify(JSON.parse(fancierOut.trim())),
+    );
 
     // Same steps with the real dedent package
     await Bun.write(
@@ -44,6 +48,10 @@ describe("fixture classification", () => {
     await Bun.write(
       "./fixtures/workflow-cases-from-js-fancier-dedent.json",
       fancierOutDedent,
+    );
+    await Bun.write(
+      "./fixtures/workflow-cases-from-js-fancier-dedent.yml",
+      stringify(JSON.parse(fancierOutDedent.trim())),
     );
 
     // expects
