@@ -207,7 +207,7 @@ describe("jsonToJavascript", () => {
       }
       `);
     expect(evalResult).toMatchInlineSnapshot(`
-      "{ text: 'x \\n  \\n   x\\n' }
+      "{ text: '\\n\\n x \\n\\n x \\n\\n' }
       "
       `);
   });
