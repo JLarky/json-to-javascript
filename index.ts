@@ -186,8 +186,21 @@ export async function jsonToJavascript(
   formatted = options.beforePrettier
     ? options.beforePrettier(formatted)
     : formatted;
-  // Don't format with prettier yet - we need to replace markers first
-  // Format after replacement to ensure template literals are formatted correctly
+  // Format with prettier BEFORE replacement to get correct indentation
+  // Then format again AFTER replacement to finalize template literals
+  if (usePrettier && markerCount > 0) {
+    try {
+      formatted = await format(formatted, {
+        parser: "babel",
+        ...options.prettierOptions,
+      });
+    } catch (error) {
+      throw new Error(
+        `Failed to format code with prettier, consider turning off prettier with --usePrettier false`,
+        { cause: error },
+      );
+    }
+  }
   const dedentPrefix = options.dedentPrefix ?? " dedent";
   const dedentSuffix = options.dedentSuffix ?? "";
   for (let index = 0; index < markerCount; index++) {
@@ -217,11 +230,13 @@ export async function jsonToJavascript(
     // Find the line containing the marker to get indentation
     const line = formatted.split("\n").find((line) => line.includes(marker));
     const indent = line?.match(/^(\s*)/)?.[1] || "";
-    const indented = escaped.replaceAll("\n", "\n" + indent + "  ");
+    // Indent all lines including the first one
+    const contentIndent = indent + "  ";
+    const indented = contentIndent + escaped.replaceAll("\n", "\n" + contentIndent);
     const linesExpression = [
       dedentPrefix + "`",
-      indent + "  " + indented,
-      indent + "  `" + dedentSuffix, // Closing backtick should have same indent as content
+      indented,
+      contentIndent + "`" + dedentSuffix, // Closing backtick should have same indent as content
     ].join("\n");
     formatted = formatted.replace(quotedMarker, linesExpression);
   }
