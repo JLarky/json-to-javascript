@@ -41,7 +41,7 @@ describe("cli", () => {
         name: dedent\`
         John
         Doe
-        \`,
+      \`,
         age: 30,
       };
       "
