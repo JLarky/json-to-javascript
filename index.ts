@@ -249,11 +249,11 @@ export async function jsonToJavascript(
     const indent = line?.match(/^(\s*)/)?.[1] || "";
     const contentIndent = indent + "  ";
     const indented =
-      contentIndent + composed.replaceAll("\n", "\n" + contentIndent);
+      contentIndent + composed.replaceAll("\n", () => "\n" + contentIndent);
     const linesExpression = [
       dedentPrefix + "`",
       indented,
-      contentIndent + "`" + dedentSuffix,
+      indent + "`" + dedentSuffix,
     ].join("\n");
     formatted = formatted.replace(quotedMarker, () => linesExpression);
   }

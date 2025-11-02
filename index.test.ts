@@ -45,7 +45,7 @@ describe("jsonToJavascript", () => {
           text: dedent\`
           Hello
           World
-          \`,
+        \`,
         };
         return js;
       }
@@ -64,7 +64,7 @@ describe("jsonToJavascript", () => {
           dedent\`
           line1
           line2
-          \`,
+        \`,
           42,
         ];
         return js;
@@ -90,7 +90,7 @@ describe("jsonToJavascript", () => {
               text
               with
               newlines
-              \`,
+            \`,
             normal: "no newlines",
           },
         };
@@ -148,7 +148,7 @@ describe("jsonToJavascript", () => {
           text: dedent\`
           
           
-          \`,
+        \`,
         };
         return js;
       }
@@ -171,7 +171,7 @@ describe("jsonToJavascript", () => {
          x 
         
         
-        \`,
+      \`,
       });
       "
       ,
@@ -199,7 +199,7 @@ describe("jsonToJavascript", () => {
          x 
         
         
-        \`,
+      \`,
       });
       "
       ,
@@ -227,12 +227,12 @@ describe("jsonToJavascript", () => {
           unix: dedent\`
             line1
             line2
-            \`,
-          carriage: \"line1\\rline2\",
+          \`,
+          carriage: "line1\\rline2",
           windows: dedent\`
             line1\${"\\r"}
             line2
-            \`,
+          \`,
         };
         return js;
       }
@@ -262,19 +262,19 @@ describe("jsonToJavascript", () => {
               multi
               line
               text
-              \`,
+            \`,
             level2: {
               test: dedent\`
                 multi
                 line
                 text
-                \`,
+              \`,
               level3: {
                 text: dedent\`
                 multi
                 line
                 text
-                \`,
+              \`,
               },
             },
           },

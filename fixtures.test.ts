@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { parse, stringify } from "yaml";
 import { jsonToJavascript } from "./index";
 import { myEval } from "./test-utils";
+import { $ } from "bun";
 
 describe("fixture classification", () => {
   it("classifies workflow-cases samples", async () => {
@@ -53,6 +54,9 @@ describe("fixture classification", () => {
       "./fixtures/workflow-cases-from-js-fancier-dedent.yml",
       stringify(JSON.parse(fancierOutDedent.trim())),
     );
+
+    await $`diff fixtures/workflow-cases-output.yml fixtures/workflow-cases-from-js-fancier.yml > fixtures/yaml-diff.diff || true`;
+    await $`diff fixtures/workflow-cases-output.yml fixtures/workflow-cases-from-js-fancier-dedent.yml > fixtures/yaml-diff-dedent.diff || true`;
 
     // expects
     expect(out.trimEnd()).toBe(jsonDoc);
