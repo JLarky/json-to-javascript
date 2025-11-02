@@ -1,0 +1,111 @@
+25,28c25,26
+<       Line C    
+<   leading_and_blank: |
+<     
+< 
+---
+>       Line C
+>   leading_and_blank: |-
+42,43c40,43
+<     Real line 2\nEscaped newline sequence literal\nAnother line
+<   deep_indent_literal: |
+---
+>     Real line 2
+>     Escaped newline sequence literal
+>     Another line
+>   deep_indent_literal: |-
+49c49
+<   deep_indent_folded: |
+---
+>   deep_indent_folded: |-
+55c55
+<   github_expression_step: |
+---
+>   github_expression_step: |-
+61c61
+<   heredoc_script: |
+---
+>   heredoc_script: |-
+66c66
+<   fenced_code_block: |
+---
+>   fenced_code_block: |-
+71c71
+<   mixed_markup: |
+---
+>   mixed_markup: |-
+77c77
+<   block_with_trailing_ws: |
+---
+>   block_with_trailing_ws: |-
+81,84c81,82
+<   folded_ending_blank: |
+<     This is a folded line followed by another
+<   literal_start_blank: |
+<     
+---
+>   folded_ending_blank: This is a folded line followed by another
+>   literal_start_blank: |-
+90c88
+<   json_like: |
+---
+>   json_like: |-
+95c93
+<   yaml_in_yaml: |
+---
+>   yaml_in_yaml: |-
+99c97
+<   backslash_continuations: |
+---
+>   backslash_continuations: |-
+103c101
+<   varying_indent: |
+---
+>   varying_indent: |-
+108,114c106,108
+<   empty_multiline: |+
+<     
+< 
+< 
+<   stale-pr-message: |
+<     No PR activity in 30 days.
+<   run: |
+---
+>   empty_multiline: ""
+>   stale-pr-message: No PR activity in 30 days.
+>   run: |-
+121,124c115,119
+<   escaped_backticks_code: >
+<     const commentBody = `string with ticks in it \`git rebase -i\`\nlast
+<     line`\n    echo "Done"
+<   script: |
+---
+>   escaped_backticks_code: |-
+>     const commentBody = `string with ticks in it \`git rebase -i\`
+>     last line`
+>         echo "Done"
+>   script: |-
+150c145
+<   block_literal: |
+---
+>   block_literal: |-
+155,157c150,151
+<   block_folded: >
+<     Folded text first line second line with backslash \ third line containing $
+<     final line with `tick`
+---
+>   block_folded: Folded text first line second line with backslash \ third line
+>     containing $ final line with `tick`
+161c155
+<       multiline: |
+---
+>       multiline: |-
+170c164
+<   - |
+---
+>   - |-
+174,175c168
+<   - |
+<     Folded item first folded item second with ` folded item third
+---
+>   - Folded item first folded item second with ` folded item third

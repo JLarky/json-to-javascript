@@ -1,0 +1,66 @@
+2c2
+<   plain_safe: |-
+---
+>   plain_safe: |
+6c6
+<   with_backtick: |-
+---
+>   with_backtick: |
+9c9
+<   with_dollar: |-
+---
+>   with_dollar: |
+12c12
+<   with_double_dollar: |-
+---
+>   with_double_dollar: |
+16c16
+<   with_backslash: |-
+---
+>   with_backslash: |
+19c19
+<   mixed_risky: |-
+---
+>   mixed_risky: |
+22c22
+<   trailing_spaces: |-
+---
+>   trailing_spaces: |
+35c35
+<   emoji_unicode: |-
+---
+>   emoji_unicode: |
+39,40c39,40
+<   crlf_variant: "Line1\r\nLine2\r\nLine3"
+<   escaped_vs_real: |-
+---
+>   crlf_variant: "Line1\r\nLine2\r\nLine3\n"
+>   escaped_vs_real: |
+58c58
+<   github_expression_inline: |-
+---
+>   github_expression_inline: |
+87c87
+<   looks_like_template: |-
+---
+>   looks_like_template: |
+137c137
+<   multiline_plain: |-
+---
+>   multiline_plain: |
+141c141
+<   multiline_with_backtick: |-
+---
+>   multiline_with_backtick: |
+144c144
+<   multiline_with_dollar: |-
+---
+>   multiline_with_dollar: |
+147c147
+<   multiline_with_backslash: |-
+---
+>   multiline_with_backslash: |
+167c167
+<   - |-
+---
+>   - |
